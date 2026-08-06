@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver6</title>
+<title>スライムカードバトル Ver7 - ボスバトル追加</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -153,7 +153,7 @@
     @keyframes attackStepPlayer { 0% { transform: translateY(0); } 50% { transform: translateY(-30px) scale(1.1); } 100% { transform: translateY(0); } }
     @keyframes attackStepEnemy { 0% { transform: translateY(0); } 50% { transform: translateY(30px) scale(1.1); } 100% { transform: translateY(0); } }
     @keyframes hitShake { 0% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } 100% { transform: translateX(0); } }
-    @keyframes popText { 0% { opacity: 1; transform: translate(-50%, 0) scale(1.2); } 50% { opacity: 1; transform: translate(-50%, -20px) scale(1.5); } 100% { opacity: 0; transform: translate(-50%, -35px) scale(1); } }
+    @keyframes popText { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -100%) scale(1); } }
 
     .anim-attack-player { animation: attackStepPlayer 0.4s ease-in-out; }
     .anim-attack-enemy { animation: attackStepEnemy 0.4s ease-in-out; }
@@ -220,6 +220,7 @@
         <button onclick="startBattle(2)">ステージ2: 火山のふもと (報奨 200🪙)</button>
         <button onclick="startBattle(3)">ステージ3: スライム城 (報奨 500🪙)</button>
         <button onclick="startBattle(4)" style="background-color: #e67e22; border: 2px solid #f1c40f;">🌺 イベント: 南のビーチ (1%で限定キャラ! 300🪙)</button>
+        <button onclick="startBattle(5)" style="background-color: #8e44ad; border: 2px solid #9b59b6; margin-top:15px; padding: 20px;">💀 新ステージ: 魔王の玉座<br>(ボスバトル / 報奨 1500🪙)</button>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
@@ -243,7 +244,7 @@
 <script>
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // --- データベース (gachaRate: 0 のキャラはガチャから出ません) ---
+    // --- データベース ---
     const CARD_DB = [
         { id: 1, name: "緑スライム", hp: 30, atk: 12, skill: "たいあたり", skillDesc: "1.3倍のダメージ", trait: "自然治癒", traitDesc: "毎ターン終了時HP5回復", rarity: "N", color: "#2ecc71", scale: 1.0, imageURL: "", gachaRate: 30 },
         { id: 2, name: "赤スライム", hp: 25, atk: 15, skill: "ひのこ", skillDesc: "1.5倍ダメ、自身3ダメ", trait: "猛火", traitDesc: "HP半分以下でダメ1.5倍", rarity: "N", color: "#e74c3c", scale: 1.0, imageURL: "", gachaRate: 30 },
@@ -254,14 +255,18 @@
         { id: 7, name: "メタルスライム", hp: 12, atk: 30, skill: "会心の一撃", skillDesc: "2倍の強力なダメージ", trait: "メタルボディ", traitDesc: "被ダメが1か0になる", rarity: "SR", color: "#bdc3c7", scale: 0.8, imageURL: "", gachaRate: 2 },
         { id: 8, name: "サマースライム", hp: 35, atk: 10, skill: "ウォーターラッシュ", skillDesc: "ランダムな敵に5回攻撃", trait: "サマーリフレッシュ", traitDesc: "与ダメのたびHP2回復", rarity: "EX", color: "#00ced1", scale: 1.1, imageURL: "", gachaRate: 0 },
         { id: 9, name: "ギャラクシースライム", hp: 70, atk: 24, skill: "ボイドホール", skillDesc: "敵1体を虚無状態(毎Tダメ)にする", trait: "虚無の侵食", traitDesc: "虚無状態の敵に与えるダメ1.5倍", rarity: "UR", color: "#4b0082", scale: 1.3, imageURL: "", gachaRate: 0 },
-        { id: 10, name: "メテオスライム", hp: 85, atk: 22, skill: "メテオフォール", skillDesc: "敵全体に強力なダメージ", trait: "不滅の流星", traitDesc: "HPが0になると一度だけHP1で復活", rarity: "UR", color: "#d35400", scale: 1.3, imageURL: "", gachaRate: 0 }
+        { id: 10, name: "メテオスライム", hp: 85, atk: 22, skill: "メテオフォール", skillDesc: "敵全体に強力なダメージ", trait: "不滅の流星", traitDesc: "HPが0になると一度だけHP1で復活", rarity: "UR", color: "#d35400", scale: 1.3, imageURL: "", gachaRate: 0 },
+        
+        // ボス専用キャラクター
+        { id: 99, name: "魔王スライム", hp: 800, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
     ];
 
     const STAGES = {
         1: { enemies: [1, 1, 3], reward: 100, isEvent: false },
         2: { enemies: [2, 2, 4], reward: 200, isEvent: false },
         3: { enemies: [6, 5, 7], reward: 500, isEvent: false },
-        4: { enemies: [8, 3, 8], reward: 300, isEvent: true }
+        4: { enemies: [8, 3, 8], reward: 300, isEvent: true },
+        5: { enemies: [99], reward: 1500, isEvent: false } // 新規ボスステージ
     };
 
     const SAVE_KEY = "slime_card_game_data";
@@ -296,41 +301,30 @@
         document.querySelectorAll('.coin-val').forEach(el => el.innerText = playerCoins);
     }
 
-    // ショップボタンの状態（購入済みかどうか）を更新
+    // ショップボタンの状態
     function updateShopButtons() {
         const btnGalaxy = document.getElementById('btn-buy-galaxy');
         const btnMeteor = document.getElementById('btn-buy-meteor');
         if (btnGalaxy) {
             if (playerInventory.includes(9)) {
-                btnGalaxy.innerHTML = "🌌 ギャラクシー<br>(購入済み)";
-                btnGalaxy.disabled = true;
+                btnGalaxy.innerHTML = "🌌 ギャラクシー<br>(購入済み)"; btnGalaxy.disabled = true;
             } else {
-                btnGalaxy.innerHTML = "🌌 ギャラクシー<br>(20000🪙)";
-                btnGalaxy.disabled = false;
+                btnGalaxy.innerHTML = "🌌 ギャラクシー<br>(20000🪙)"; btnGalaxy.disabled = false;
             }
         }
         if (btnMeteor) {
             if (playerInventory.includes(10)) {
-                btnMeteor.innerHTML = "☄️ メテオ<br>(購入済み)";
-                btnMeteor.disabled = true;
+                btnMeteor.innerHTML = "☄️ メテオ<br>(購入済み)"; btnMeteor.disabled = true;
             } else {
-                btnMeteor.innerHTML = "☄️ メテオ<br>(17000🪙)";
-                btnMeteor.disabled = false;
+                btnMeteor.innerHTML = "☄️ メテオ<br>(17000🪙)"; btnMeteor.disabled = false;
             }
         }
     }
 
-    // コインでショップから購入
     function buySlime(cardId, price) {
-        if (playerInventory.includes(cardId)) {
-            return alert("すでに所持しています！");
-        }
-        if (playerCoins < price) {
-            return alert("コインが足りません！");
-        }
-        playerCoins -= price;
-        playerInventory.push(cardId);
-        saveData();
+        if (playerInventory.includes(cardId)) return alert("すでに所持しています！");
+        if (playerCoins < price) return alert("コインが足りません！");
+        playerCoins -= price; playerInventory.push(cardId); saveData();
         let card = CARD_DB.find(c => c.id === cardId);
         alert(`🎉 ${card.name} を購入しました！`);
     }
@@ -346,20 +340,17 @@
             document.getElementById('gacha-result').innerText = "";
             document.getElementById('gacha-card-display').innerHTML = "";
         }
-        updateCoinDisplay();
-        updateShopButtons();
+        updateCoinDisplay(); updateShopButtons();
     }
 
-    // --- イラスト生成関数 ---
     function renderIllustration(card) {
-        if (card.imageURL) {
-            return `<img src="${card.imageURL}" style="max-height: 50px; max-width: 100%; object-fit: contain;">`;
-        }
+        if (card.imageURL) return `<img src="${card.imageURL}" style="max-height: 50px; max-width: 100%; object-fit: contain;">`;
         let crownHtml = '';
         if (card.id === 6) crownHtml = `<div class="crown">👑</div>`;
         if (card.id === 8) crownHtml = `<div class="crown">🌺</div>`;
         if (card.id === 9) crownHtml = `<div class="crown">🌌</div>`;
         if (card.id === 10) crownHtml = `<div class="crown">☄️</div>`;
+        if (card.id === 99) crownHtml = `<div class="crown">💀</div>`;
         
         return `
             <div class="css-slime" style="background: ${card.color}; transform: scale(${card.scale});">
@@ -369,19 +360,18 @@
         `;
     }
 
-    // --- カードUI (図鑑・デッキ用) ---
     function createCardHTML(card, isSelected = false, readOnly = false) {
         let selectedClass = isSelected ? "selected" : "";
         let onclickAttr = readOnly ? "" : `onclick="toggleDeck(${card.id})"`;
+        // 図鑑などでボスは大きすぎるので少し抑える
+        let dispScale = card.id === 99 ? 1.0 : card.scale;
         return `
             <div class="card ${selectedClass}" data-id="${card.id}" ${onclickAttr}>
                 <div class="rarity">${card.rarity}</div>
                 <div class="name">${card.name}</div>
-                
-                <div class="illustration-box">
+                <div class="illustration-box" style="transform: scale(${dispScale});">
                     ${renderIllustration(card)}
                 </div>
-                
                 <div class="stats">HP: <span class="hp">${card.hp}</span> / ATK: <span class="atk">${card.atk}</span></div>
                 <div class="title-label">⚔️ ${card.skill}</div>
                 <div class="desc">${card.skillDesc}</div>
@@ -416,24 +406,19 @@
         list.innerHTML = "";
         CARD_DB.forEach(card => {
             if (playerInventory.includes(card.id)) list.innerHTML += createCardHTML(card, false, true);
-            else list.innerHTML += `<div class="card unknown"><div>???</div></div>`;
+            else if (card.id !== 99) list.innerHTML += `<div class="card unknown"><div>???</div></div>`;
         });
     }
 
-    // --- ガチャ処理 ---
     function drawGacha() {
         if (playerCoins < 100) return alert("コインが足りません！");
-
         const availableCards = CARD_DB.filter(c => c.gachaRate && c.gachaRate > 0);
         const totalRate = availableCards.reduce((sum, c) => sum + c.gachaRate, 0);
 
         let rand = Math.random() * totalRate;
         let newCard = null;
         for (let c of availableCards) {
-            if (rand < c.gachaRate) {
-                newCard = c;
-                break;
-            }
+            if (rand < c.gachaRate) { newCard = c; break; }
             rand -= c.gachaRate;
         }
         if (!newCard) newCard = availableCards[0];
@@ -447,6 +432,90 @@
         }
         saveData();
         document.getElementById('gacha-card-display').innerHTML = createCardHTML(newCard, false, true);
+    }
+
+    // --- エフェクト処理 ---
+    function playSkillEffect(targetUid, type) {
+        const targetElem = document.getElementById(`card-${targetUid}`);
+        if(!targetElem) return;
+        const rect = targetElem.getBoundingClientRect();
+        
+        const effect = document.createElement('div');
+        effect.style.position = 'fixed';
+        effect.style.left = (rect.left + rect.width / 2) + 'px';
+        effect.style.top = (rect.top + rect.height / 2) + 'px';
+        effect.style.transform = 'translate(-50%, -50%)';
+        effect.style.zIndex = '9999';
+        effect.style.pointerEvents = 'none';
+        effect.style.fontWeight = 'bold';
+        effect.style.textShadow = '0 0 10px rgba(255,255,255,0.8)';
+        
+        switch(type) {
+            case 'slash':
+                effect.innerHTML = '💥';
+                effect.style.fontSize = '50px';
+                effect.style.animation = 'popText 0.5s ease-out forwards';
+                break;
+            case 'fire':
+                effect.innerHTML = '🔥';
+                effect.style.fontSize = '60px';
+                effect.style.animation = 'popText 0.6s ease-out forwards';
+                break;
+            case 'water':
+                effect.innerHTML = '💧';
+                effect.style.fontSize = '50px';
+                effect.style.animation = 'popText 0.6s ease-out forwards';
+                break;
+            case 'heal':
+                effect.innerHTML = '✨';
+                effect.style.fontSize = '50px';
+                effect.style.animation = 'popText 0.8s ease-out forwards';
+                break;
+            case 'poison':
+                effect.innerHTML = '☠️';
+                effect.style.fontSize = '50px';
+                effect.style.animation = 'popText 0.6s ease-out forwards';
+                break;
+            case 'guard':
+                effect.innerHTML = '🛡️';
+                effect.style.fontSize = '60px';
+                effect.style.animation = 'popText 0.6s ease-out forwards';
+                break;
+            case 'critical':
+                effect.innerHTML = '⚡️';
+                effect.style.fontSize = '70px';
+                effect.style.animation = 'popText 0.5s ease-out forwards';
+                break;
+            case 'void':
+                effect.innerHTML = '🌌';
+                effect.style.fontSize = '60px';
+                effect.style.animation = 'popText 0.8s ease-out forwards';
+                break;
+            case 'meteor':
+                effect.innerHTML = '☄️';
+                effect.style.fontSize = '80px';
+                effect.style.animation = 'popText 0.8s ease-out forwards';
+                break;
+            case 'darkness':
+                effect.innerHTML = '🌑';
+                effect.style.fontSize = '100px';
+                effect.style.animation = 'popText 1s ease-out forwards';
+                break;
+        }
+        document.body.appendChild(effect);
+        setTimeout(() => effect.remove(), 1000);
+    }
+
+    function shakeScreen() {
+        const screen = document.getElementById('screen-battle');
+        screen.animate([
+            { transform: 'translate(0, 0)' },
+            { transform: 'translate(-10px, 8px)' },
+            { transform: 'translate(10px, -8px)' },
+            { transform: 'translate(-10px, -8px)' },
+            { transform: 'translate(10px, 8px)' },
+            { transform: 'translate(0, 0)' }
+        ], { duration: 400 });
     }
 
     // --- バトルUI ---
@@ -463,20 +532,12 @@
         battleState.player = playerDeck.map((id, index) => ({ 
             ...CARD_DB.find(c => c.id === id), 
             currentHp: CARD_DB.find(c => c.id === id).hp, 
-            uid: 'p'+index, 
-            isDefending: false, 
-            cooldown: 0,
-            voidTurns: 0,
-            hasRevived: false
+            uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, hasRevived: false
         }));
         battleState.enemy = stageInfo.enemies.map((id, index) => ({ 
             ...CARD_DB.find(c => c.id === id), 
             currentHp: CARD_DB.find(c => c.id === id).hp, 
-            uid: 'e'+index, 
-            isDefending: false, 
-            cooldown: 0,
-            voidTurns: 0,
-            hasRevived: false
+            uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, hasRevived: false
         }));
         
         battleState.isOver = false;
@@ -489,10 +550,15 @@
             let stateClass = fighter.currentHp <= 0 ? "dead" : ((!battleState.isOver && battleState.player[currentCommandIndex]?.uid === fighter.uid) ? "inputting" : "");
             let cdText = fighter.cooldown > 0 ? `<div class="cooldown-label">⏳ 技CT: ${fighter.cooldown}T</div>` : `<div class="cooldown-label" style="color:#2ecc71;">✨ 技OK</div>`;
             let voidText = fighter.voidTurns > 0 ? `<div style="font-size:10px; color:#9b59b6; font-weight:bold;">🌌 虚無(${fighter.voidTurns}T)</div>` : '';
+            
+            // ボスの場合、表示枠を少し広げる
+            let extraStyle = fighter.id === 99 ? 'border: 3px solid #e74c3c; box-shadow: 0 0 10px #e74c3c;' : '';
+            let imageScale = fighter.id === 99 ? 1.0 : 0.8; // CSSスライム自体のスケールを使用
+
             return `
-                <div class="battle-card ${stateClass}" id="card-${fighter.uid}">
+                <div class="battle-card ${stateClass}" id="card-${fighter.uid}" style="${extraStyle}">
                     <div style="font-weight:bold;">${fighter.name}</div>
-                    <div class="illustration-box" style="transform: scale(0.8); height: 45px; margin: 5px 0;">
+                    <div class="illustration-box" style="transform: scale(${imageScale}); height: 45px; margin: 10px 0;">
                         ${renderIllustration(fighter)}
                     </div>
                     <div class="hp-bar-bg"><div class="hp-bar-fill" style="width: ${hpPercent}%;"></div></div>
@@ -519,11 +585,13 @@
         floatEl.className = 'floating-text'; floatEl.style.color = color; floatEl.innerText = text;
         cardElem.appendChild(floatEl); setTimeout(() => floatEl.remove(), 800);
     }
+    
     async function animateAttack(uid, team) {
         const c = document.getElementById(`card-${uid}`); if(!c) return;
         c.classList.add(team === 'player' ? 'anim-attack-player' : 'anim-attack-enemy'); await sleep(400);
         c.classList.remove(team === 'player' ? 'anim-attack-player' : 'anim-attack-enemy');
     }
+    
     async function animateHit(uid) {
         const c = document.getElementById(`card-${uid}`); if(!c) return;
         c.classList.add('anim-hit'); await sleep(400); c.classList.remove('anim-hit');
@@ -577,6 +645,7 @@
                 let dmg = calculateDamage(actor, target, actor.atk);
                 if (actor.id === 5) dmg += 5;
                 dealDamage(target, dmg);
+                playSkillEffect(target.uid, 'slash'); // 通常攻撃エフェクト
                 showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid);
                 logMsg(`[${actor.name}]の通常攻撃！ ${target.name}に ${dmg} のダメージ！`, color);
 
@@ -596,11 +665,17 @@
         if (!battleState.isOver) {
             [...battleState.player, ...battleState.enemy].forEach(c => {
                 if (c.cooldown > 0) c.cooldown--;
+                // 緑スライム回復
                 if (c.currentHp > 0 && c.id === 1) {
                     c.currentHp = Math.min(c.hp, c.currentHp + 5);
                     showFloatingText(c.uid, "+5", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の自然治癒！HPが5回復！`, "#2ecc71");
                 }
-                // 虚無状態の継続ダメージ処理 (毎ターン12ダメージ)
+                // ボス(魔王スライム)自動回復
+                if (c.currentHp > 0 && c.id === 99) {
+                    c.currentHp = Math.min(c.hp, c.currentHp + 15);
+                    showFloatingText(c.uid, "+15", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の魔王の威圧！HPが15回復！`, "#2ecc71");
+                }
+                // 虚無状態の継続ダメージ処理
                 if (c.currentHp > 0 && c.voidTurns > 0) {
                     let voidDmg = 12;
                     dealDamage(c, voidDmg);
@@ -621,19 +696,13 @@
         if(defender.id === 6) dmg = Math.floor(dmg * 0.9);
         if(defender.isDefending) dmg = Math.floor(dmg / 2);
         if(defender.id === 7) dmg = Math.random() < 0.5 ? 1 : 0;
-
-        // ギャラクシースライムの特性: 虚無状態の敵へのダメージが1.5倍
-        if(attacker.id === 9 && defender.voidTurns > 0) {
-            dmg = Math.floor(dmg * 1.5);
-        }
-
+        if(attacker.id === 9 && defender.voidTurns > 0) dmg = Math.floor(dmg * 1.5);
+        
         return dmg < 0 ? 0 : dmg;
     }
 
     function dealDamage(target, amount) { 
         target.currentHp = Math.max(0, target.currentHp - amount);
-
-        // メテオスライムの特性: 死亡時に一度だけHP1で復活
         if (target.currentHp <= 0 && target.id === 10 && !target.hasRevived) {
             target.currentHp = 1;
             target.hasRevived = true;
@@ -645,19 +714,36 @@
     async function processSkillAsync(actor, target, targets, allies, color) {
         let dmg = 0;
         switch(actor.id) {
-            case 1: dmg = calculateDamage(actor, target, actor.atk * 1.3); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
-            case 2: dmg = calculateDamage(actor, target, actor.atk * 1.5); dealDamage(target, dmg); actor.currentHp = Math.max(0, actor.currentHp - 3); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); showFloatingText(actor.uid, `-3`, "#ff7979"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！(反動3)`, color); break;
-            case 3: let lowest = allies.sort((a,b) => (a.currentHp/a.hp) - (b.currentHp/b.hp))[0]; let heal = Math.floor(actor.atk * 2); lowest.currentHp = Math.min(lowest.hp, lowest.currentHp + heal); showFloatingText(lowest.uid, `+${heal}`, "#2ecc71"); logMsg(`[${actor.name}]の ${actor.skill}！ ${lowest.name}のHPが ${heal} 回復！`, "#2ecc71"); await sleep(400); break;
-            case 4: actor.isDefending = true; showFloatingText(actor.uid, "DEFENSE", "#3498db"); logMsg(`[${actor.name}]は ${actor.skill} を使って身を固めた！`, color); await sleep(400); break;
-            case 5: dmg = calculateDamage(actor, target, actor.atk * 0.8) + 10; dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#9b59b6"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
-            case 6: logMsg(`[${actor.name}]の ${actor.skill}！全体攻撃！`, color); for (let t of targets) { let d = calculateDamage(actor, t, actor.atk * 0.8); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e74c3c"); animateHit(t.uid); } await sleep(500); break;
-            case 7: dmg = calculateDamage(actor, target, actor.atk * 2); dealDamage(target, dmg); showFloatingText(target.uid, `CRITICAL -${dmg}`, "#f1c40f"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！！ ${target.name}に ${dmg} の大ダメージ！`, "#f1c40f"); break;
+            case 1: 
+                playSkillEffect(target.uid, 'slash');
+                dmg = calculateDamage(actor, target, actor.atk * 1.3); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
+            case 2: 
+                playSkillEffect(target.uid, 'fire');
+                dmg = calculateDamage(actor, target, actor.atk * 1.5); dealDamage(target, dmg); actor.currentHp = Math.max(0, actor.currentHp - 3); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); showFloatingText(actor.uid, `-3`, "#ff7979"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！(反動3)`, color); break;
+            case 3: 
+                let lowest = allies.sort((a,b) => (a.currentHp/a.hp) - (b.currentHp/b.hp))[0]; 
+                playSkillEffect(lowest.uid, 'heal');
+                let heal = Math.floor(actor.atk * 2); lowest.currentHp = Math.min(lowest.hp, lowest.currentHp + heal); showFloatingText(lowest.uid, `+${heal}`, "#2ecc71"); logMsg(`[${actor.name}]の ${actor.skill}！ ${lowest.name}のHPが ${heal} 回復！`, "#2ecc71"); await sleep(400); break;
+            case 4: 
+                playSkillEffect(actor.uid, 'guard');
+                actor.isDefending = true; showFloatingText(actor.uid, "DEFENSE", "#3498db"); logMsg(`[${actor.name}]は ${actor.skill} を使って身を固めた！`, color); await sleep(400); break;
+            case 5: 
+                playSkillEffect(target.uid, 'poison');
+                dmg = calculateDamage(actor, target, actor.atk * 0.8) + 10; dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#9b59b6"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
+            case 6: 
+                shakeScreen();
+                logMsg(`[${actor.name}]の ${actor.skill}！全体攻撃！`, color); 
+                for (let t of targets) { playSkillEffect(t.uid, 'slash'); let d = calculateDamage(actor, t, actor.atk * 0.8); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e74c3c"); animateHit(t.uid); } await sleep(500); break;
+            case 7: 
+                playSkillEffect(target.uid, 'critical');
+                dmg = calculateDamage(actor, target, actor.atk * 2); dealDamage(target, dmg); showFloatingText(target.uid, `CRITICAL -${dmg}`, "#f1c40f"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！！ ${target.name}に ${dmg} の大ダメージ！`, "#f1c40f"); break;
             case 8:
                 logMsg(`[${actor.name}]の ${actor.skill}！ランダム5回連撃！`, color);
                 for (let i = 0; i < 5; i++) {
                     let aliveTargets = targets.filter(t => t.currentHp > 0);
                     if (aliveTargets.length === 0) break;
                     let randTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+                    playSkillEffect(randTarget.uid, 'water');
                     let d = calculateDamage(actor, randTarget, actor.atk * 0.7);
                     dealDamage(randTarget, d);
                     showFloatingText(randTarget.uid, `-${d}`, "#00ced1");
@@ -670,28 +756,46 @@
                     await sleep(250);
                 }
                 break;
-            
-            // ギャラクシースライム: 敵1体を虚無状態(3ターン)にする
             case 9:
                 dmg = calculateDamage(actor, target, actor.atk);
-                target.voidTurns = 3;
                 dealDamage(target, dmg);
+                playSkillEffect(target.uid, 'void');
                 showFloatingText(target.uid, `-${dmg}`, "#8e44ad");
-                showFloatingText(target.uid, "虚無付与!", "#9b59b6");
                 await animateHit(target.uid);
-                logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ＆3ターンの虚無状態を付与！`, "#8e44ad");
+                // ボスは状態異常無効
+                if(target.id === 99) {
+                    showFloatingText(target.uid, "無効!", "#bdc3c7");
+                    logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！ だが魔王の威厳で状態異常は無効化された！`, "#8e44ad");
+                } else {
+                    target.voidTurns = 3;
+                    showFloatingText(target.uid, "虚無付与!", "#9b59b6");
+                    logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ＆3ターンの虚無状態を付与！`, "#8e44ad");
+                }
                 break;
-
-            // メテオスライム: 敵全体攻撃
             case 10:
+                shakeScreen();
                 logMsg(`[${actor.name}]の ${actor.skill}！隕石が降り注ぐ！`, "#d35400");
                 for (let t of targets) {
+                    playSkillEffect(t.uid, 'meteor');
                     let d = calculateDamage(actor, t, actor.atk * 1.2);
                     dealDamage(t, d);
                     showFloatingText(t.uid, `-${d}`, "#e67e22");
                     animateHit(t.uid);
                 }
                 await sleep(500);
+                break;
+            // 新規: 魔王スライム(ボス)
+            case 99:
+                shakeScreen();
+                logMsg(`[${actor.name}]の ${actor.skill}！！圧倒的な闇の力が迸る！`, "#e74c3c");
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'darkness');
+                    let d = calculateDamage(actor, t, actor.atk * 1.5);
+                    dealDamage(t, d);
+                    showFloatingText(t.uid, `-${d}`, "#c0392b");
+                    animateHit(t.uid);
+                }
+                await sleep(600);
                 break;
         }
     }
@@ -714,9 +818,7 @@
                     }
                 }
             }
-
-            saveData();
-            logMsg(logRewardMsg, "#f1c40f"); endBattle();
+            saveData(); logMsg(logRewardMsg, "#f1c40f"); endBattle();
         } else if (!battleState.player.some(p => p.currentHp > 0)) {
             logMsg("<br>💀 敗北しました...", "#e74c3c"); endBattle();
         }
