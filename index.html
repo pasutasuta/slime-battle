@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver7 - ボスバトル追加</title>
+<title>スライムカードバトル Ver8 - 光闇クラフト追加</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -184,6 +184,7 @@
         <button onclick="changeScreen('screen-stage')">⚔️ バトルに出発</button>
         <button onclick="initDeckScreen()">📋 デッキ編成</button>
         <button onclick="changeScreen('screen-gacha')">💎 ガチャを引く</button>
+        <button onclick="changeScreen('screen-craft')" style="background-color: #f39c12; border: 2px solid #e67e22;">🔨 合成 (クラフト)</button>
         <button onclick="initBookScreen()" style="background-color: #8e44ad;">📖 スライム図鑑</button>
         <button onclick="resetData()" style="background-color: #e74c3c; width: 40%; font-size: 12px; padding: 8px; margin-top: 30px;">⚠️ データ初期化</button>
     </div>
@@ -192,6 +193,22 @@
         <h2>デッキ編成</h2>
         <p style="text-align:center;">タップして3枚選んでください<br>現在選択中: <span id="deck-count">0</span>/3</p>
         <div id="inventory-list" class="card-container"></div>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+
+    <!-- クラフト画面 -->
+    <div id="screen-craft" class="screen">
+        <h2>スライム合成</h2>
+        <div style="text-align:center; margin-bottom: 20px;">
+            <p>特定の素材スライムを消費して<br>強力なスライムを生み出します！</p>
+            <div style="background: #fff; padding: 15px; border-radius: 8px; border: 2px dashed #95a5a6; display: inline-block; margin-top: 10px;">
+                <h3 style="margin: 0 0 10px 0; color: #8e44ad;">レシピ: 究極の光闇</h3>
+                <span style="color:#f1c40f; font-weight:bold;">光スライム</span> ➕ <span style="color:#2c3e50; font-weight:bold;">闇スライム</span><br>
+                ⬇️<br>
+                <b style="font-size: 18px;">光闇スライム</b>
+            </div>
+        </div>
+        <button onclick="craftLightDark()" style="background-color: #8e44ad;">合成を実行する</button>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
@@ -257,6 +274,11 @@
         { id: 9, name: "ギャラクシースライム", hp: 70, atk: 24, skill: "ボイドホール", skillDesc: "敵1体を虚無状態(毎Tダメ)にする", trait: "虚無の侵食", traitDesc: "虚無状態の敵に与えるダメ1.5倍", rarity: "UR", color: "#4b0082", scale: 1.3, imageURL: "", gachaRate: 0 },
         { id: 10, name: "メテオスライム", hp: 85, atk: 22, skill: "メテオフォール", skillDesc: "敵全体に強力なダメージ", trait: "不滅の流星", traitDesc: "HPが0になると一度だけHP1で復活", rarity: "UR", color: "#d35400", scale: 1.3, imageURL: "", gachaRate: 0 },
         
+        // 新規追加スライム
+        { id: 11, name: "光スライム", hp: 50, atk: 3, skill: "ホーリーヒール", skillDesc: "味方全体のHPを10回復", trait: "光の加護", traitDesc: "毎ターン自分のHPを5回復", rarity: "SR", color: "#f1c40f", scale: 1.0, imageURL: "", gachaRate: 10 },
+        { id: 12, name: "闇スライム", hp: 47, atk: 12, skill: "ダークバレット", skillDesc: "ランダムな敵2体にダメージ", trait: "闇の衝動", traitDesc: "毎ターンATK+1", rarity: "SR", color: "#2c3e50", scale: 1.0, imageURL: "", gachaRate: 10 },
+        { id: 13, name: "光闇スライム", hp: 50, atk: 5, skill: "カオスサークル", skillDesc: "味方全体HP7回復＆敵全体に虚無", trait: "混沌の再生", traitDesc: "毎ターン自分のHPを5回復", rarity: "UR", color: "linear-gradient(135deg, #f1c40f 50%, #2c3e50 50%)", scale: 1.2, imageURL: "", gachaRate: 0 },
+
         // ボス専用キャラクター
         { id: 99, name: "魔王スライム", hp: 800, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
     ];
@@ -329,6 +351,28 @@
         alert(`🎉 ${card.name} を購入しました！`);
     }
 
+    // --- クラフト処理 ---
+    function craftLightDark() {
+        if (!playerInventory.includes(11) || !playerInventory.includes(12)) {
+            return alert("光スライムと闇スライムが両方必要です！\nガチャで入手してください。");
+        }
+        if (playerInventory.includes(13)) {
+            return alert("すでに「光闇スライム」を所持しています！");
+        }
+        
+        // 所持品から光(11)と闇(12)を削除
+        playerInventory = playerInventory.filter(id => id !== 11 && id !== 12);
+        // デッキに編成されていた場合、デッキからも外す
+        playerDeck = playerDeck.filter(id => id !== 11 && id !== 12);
+        
+        // 光闇(13)を付与
+        playerInventory.push(13);
+        saveData();
+        
+        alert("🎉 合成成功！究極の「光闇スライム」を獲得しました！");
+        changeScreen('screen-home');
+    }
+
     let battleState = { player: [], enemy: [], isOver: false, currentStageReward: 0, currentStageId: 1 };
     let commandQueue = [], currentCommandIndex = 0;
 
@@ -350,6 +394,7 @@
         if (card.id === 8) crownHtml = `<div class="crown">🌺</div>`;
         if (card.id === 9) crownHtml = `<div class="crown">🌌</div>`;
         if (card.id === 10) crownHtml = `<div class="crown">☄️</div>`;
+        if (card.id === 13) crownHtml = `<div class="crown">☯️</div>`;
         if (card.id === 99) crownHtml = `<div class="crown">💀</div>`;
         
         return `
@@ -562,7 +607,7 @@
                         ${renderIllustration(fighter)}
                     </div>
                     <div class="hp-bar-bg"><div class="hp-bar-fill" style="width: ${hpPercent}%;"></div></div>
-                    <div>HP: ${fighter.currentHp}/${fighter.hp}</div>
+                    <div>HP: ${fighter.currentHp}/${fighter.hp} ⚔️${fighter.atk}</div>
                     ${voidText}
                     ${cdText}
                 </div>
@@ -645,7 +690,7 @@
                 let dmg = calculateDamage(actor, target, actor.atk);
                 if (actor.id === 5) dmg += 5;
                 dealDamage(target, dmg);
-                playSkillEffect(target.uid, 'slash'); // 通常攻撃エフェクト
+                playSkillEffect(target.uid, 'slash');
                 showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid);
                 logMsg(`[${actor.name}]の通常攻撃！ ${target.name}に ${dmg} のダメージ！`, color);
 
@@ -665,17 +710,27 @@
         if (!battleState.isOver) {
             [...battleState.player, ...battleState.enemy].forEach(c => {
                 if (c.cooldown > 0) c.cooldown--;
-                // 緑スライム回復
-                if (c.currentHp > 0 && c.id === 1) {
+                
+                // 特性: 毎ターンHP5回復 (緑スライム, 光スライム, 光闇スライム)
+                if (c.currentHp > 0 && (c.id === 1 || c.id === 11 || c.id === 13)) {
                     c.currentHp = Math.min(c.hp, c.currentHp + 5);
-                    showFloatingText(c.uid, "+5", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の自然治癒！HPが5回復！`, "#2ecc71");
+                    showFloatingText(c.uid, "+5", "#2ecc71"); 
+                    logMsg(`✨ [特性] ${c.name}の回復効果！HPが5回復！`, "#2ecc71");
                 }
-                // ボス(魔王スライム)自動回復
+                
+                // 特性: 毎ターンATK+1 (闇スライム)
+                if (c.currentHp > 0 && c.id === 12) {
+                    c.atk += 1;
+                    showFloatingText(c.uid, "ATK+1", "#e74c3c"); 
+                    logMsg(`🔥 [特性] ${c.name}の闇の衝動！攻撃力が上がった！`, "#e74c3c");
+                }
+
+                // ボス自動回復
                 if (c.currentHp > 0 && c.id === 99) {
                     c.currentHp = Math.min(c.hp, c.currentHp + 15);
                     showFloatingText(c.uid, "+15", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の魔王の威圧！HPが15回復！`, "#2ecc71");
                 }
-                // 虚無状態の継続ダメージ処理
+                // 虚無ダメージ
                 if (c.currentHp > 0 && c.voidTurns > 0) {
                     let voidDmg = 12;
                     dealDamage(c, voidDmg);
@@ -757,46 +812,70 @@
                 }
                 break;
             case 9:
-                dmg = calculateDamage(actor, target, actor.atk);
-                dealDamage(target, dmg);
-                playSkillEffect(target.uid, 'void');
-                showFloatingText(target.uid, `-${dmg}`, "#8e44ad");
-                await animateHit(target.uid);
-                // ボスは状態異常無効
-                if(target.id === 99) {
-                    showFloatingText(target.uid, "無効!", "#bdc3c7");
-                    logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！ だが魔王の威厳で状態異常は無効化された！`, "#8e44ad");
-                } else {
-                    target.voidTurns = 3;
-                    showFloatingText(target.uid, "虚無付与!", "#9b59b6");
-                    logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ＆3ターンの虚無状態を付与！`, "#8e44ad");
-                }
-                break;
+                dmg = calculateDamage(actor, target, actor.atk); dealDamage(target, dmg); playSkillEffect(target.uid, 'void'); showFloatingText(target.uid, `-${dmg}`, "#8e44ad"); await animateHit(target.uid);
+                if(target.id === 99) { showFloatingText(target.uid, "無効!", "#bdc3c7"); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！ だが魔王の威厳で状態異常は無効化された！`, "#8e44ad"); } else {
+                    target.voidTurns = 3; showFloatingText(target.uid, "虚無付与!", "#9b59b6"); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ＆3ターンの虚無状態を付与！`, "#8e44ad"); } break;
             case 10:
-                shakeScreen();
-                logMsg(`[${actor.name}]の ${actor.skill}！隕石が降り注ぐ！`, "#d35400");
-                for (let t of targets) {
-                    playSkillEffect(t.uid, 'meteor');
-                    let d = calculateDamage(actor, t, actor.atk * 1.2);
-                    dealDamage(t, d);
-                    showFloatingText(t.uid, `-${d}`, "#e67e22");
-                    animateHit(t.uid);
+                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！隕石が降り注ぐ！`, "#d35400");
+                for (let t of targets) { playSkillEffect(t.uid, 'meteor'); let d = calculateDamage(actor, t, actor.atk * 1.2); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e67e22"); animateHit(t.uid); } await sleep(500); break;
+
+            // --- 新規: 光スライム ---
+            case 11:
+                logMsg(`[${actor.name}]の ${actor.skill}！神聖な光が味方を癒す！`, color);
+                for (let a of allies) {
+                    if (a.currentHp <= 0) continue;
+                    playSkillEffect(a.uid, 'heal');
+                    a.currentHp = Math.min(a.hp, a.currentHp + 10);
+                    showFloatingText(a.uid, `+10`, "#2ecc71");
                 }
                 await sleep(500);
                 break;
-            // 新規: 魔王スライム(ボス)
-            case 99:
-                shakeScreen();
-                logMsg(`[${actor.name}]の ${actor.skill}！！圧倒的な闇の力が迸る！`, "#e74c3c");
-                for (let t of targets) {
-                    playSkillEffect(t.uid, 'darkness');
-                    let d = calculateDamage(actor, t, actor.atk * 1.5);
-                    dealDamage(t, d);
-                    showFloatingText(t.uid, `-${d}`, "#c0392b");
-                    animateHit(t.uid);
+
+            // --- 新規: 闇スライム ---
+            case 12:
+                logMsg(`[${actor.name}]の ${actor.skill}！ランダムな敵2体にダメージ！`, color);
+                for (let i = 0; i < 2; i++) {
+                    let aliveTargets = targets.filter(t => t.currentHp > 0);
+                    if (aliveTargets.length === 0) break;
+                    let randTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+                    playSkillEffect(randTarget.uid, 'darkness');
+                    let d = calculateDamage(actor, randTarget, actor.atk * 1.0);
+                    dealDamage(randTarget, d);
+                    showFloatingText(randTarget.uid, `-${d}`, "#c0392b");
+                    animateHit(randTarget.uid);
+                    logMsg(` -> ${randTarget.name}に ${d} ダメージ！`, color);
+                    await sleep(300);
                 }
-                await sleep(600);
                 break;
+                
+            // --- 新規: 光闇スライム ---
+            case 13:
+                shakeScreen();
+                logMsg(`[${actor.name}]の ${actor.skill}！混沌の力で味方を癒し、敵を虚無に包む！`, color);
+                // 味方回復
+                for (let a of allies) {
+                    if (a.currentHp <= 0) continue;
+                    playSkillEffect(a.uid, 'heal');
+                    a.currentHp = Math.min(a.hp, a.currentHp + 7);
+                    showFloatingText(a.uid, `+7`, "#2ecc71");
+                }
+                await sleep(400);
+                // 敵全体虚無
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'void');
+                    if (t.id === 99) {
+                        showFloatingText(t.uid, "無効!", "#bdc3c7");
+                    } else {
+                        t.voidTurns = 3;
+                        showFloatingText(t.uid, "虚無付与!", "#9b59b6");
+                    }
+                }
+                await sleep(500);
+                break;
+
+            case 99:
+                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！！圧倒的な闇の力が迸る！`, "#e74c3c");
+                for (let t of targets) { playSkillEffect(t.uid, 'darkness'); let d = calculateDamage(actor, t, actor.atk * 1.5); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#c0392b"); animateHit(t.uid); } await sleep(600); break;
         }
     }
 
