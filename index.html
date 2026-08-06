@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スライムカードバトル Ver5</title>
+<style>
+    /* 全画面スタイル */
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        background-color: #2c3e50;
+        color: #333;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+    }
+    #game-container {
+        width: 100%;
+        height: 100%;
+        background-color: #ecf0f1;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+    .screen {
+        display: none;
+        padding: 20px;
+        box-sizing: border-box;
+        min-height: 100%;
+        position: relative;
+    }
+    .screen.active {
+        display: block;
+    }
+    h1, h2 {
+        text-align: center;
+        color: #2c3e50;
+        margin-top: 10px;
+    }
+    
+    .coin-header {
+        background-color: #f1c40f;
+        color: #2c3e50;
+        font-weight: bold;
+        font-size: 16px;
+        padding: 8px 15px;
+        border-radius: 20px;
+        display: inline-block;
+        margin: 0 auto 15px auto;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .center-container { text-align: center; }
+
+    button {
+        display: block;
+        width: 80%;
+        max-width: 400px;
+        margin: 12px auto;
+        padding: 14px;
+        font-size: 17px;
+        font-weight: bold;
+        color: #fff;
+        background-color: #3498db;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: 0.2s;
+    }
+    button:active { transform: translateY(2px); box-shadow: 0 0px 2px rgba(0,0,0,0.1); }
+    button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; }
+    button.back-btn { background-color: #95a5a6; width: 50%; margin-top: 25px; }
+    
+    /* カードのスタイル */
+    .card-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .card {
+        background: #fff;
+        border: 2px solid #bdc3c7;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        width: calc(33% - 15px);
+        min-width: 140px;
+        box-sizing: border-box;
+        font-size: 12px;
+        position: relative;
+        cursor: pointer;
+    }
+    .card.selected { border-color: #e74c3c; background-color: #fadbd8; box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); }
+    .card.unknown { background-color: #333; color: #fff; border-color: #222; display: flex; align-items: center; justify-content: center; height: 220px; font-size: 24px; cursor: default; }
+    .card .name { font-weight: bold; font-size: 15px; margin-bottom: 5px; color: #2c3e50;}
+    .card .stats { font-weight: bold; margin-bottom: 5px; }
+    .card .hp { color: #27ae60; }
+    .card .atk { color: #c0392b; }
+    .card .title-label { font-size: 11px; background: #eee; padding: 2px 4px; border-radius: 4px; display: inline-block; margin-top: 5px; font-weight: bold;}
+    .card .desc { font-size: 10px; color: #555; margin-top: 2px; }
+    .card .rarity { position: absolute; top: 2px; left: 4px; font-size: 12px; font-weight: bold; color: #f39c12; }
+
+    /* CSSスライムイラスト */
+    .illustration-box {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+    }
+    .css-slime {
+        width: 50px;
+        height: 45px;
+        border-radius: 50% 50% 10% 10% / 70% 70% 30% 30%;
+        position: relative;
+        box-shadow: inset -5px -5px 10px rgba(0,0,0,0.2), 0 5px 5px rgba(0,0,0,0.1);
+    }
+    .css-slime .eyes {
+        position: absolute;
+        top: 20px; left: 10px;
+        width: 8px; height: 8px;
+        background: #fff; border-radius: 50%;
+        box-shadow: 22px 0 0 #fff;
+    }
+    .css-slime .eyes::after {
+        content: ''; position: absolute;
+        top: 2px; left: 4px;
+        width: 3px; height: 3px;
+        background: #333; border-radius: 50%;
+        box-shadow: 22px 0 0 #333;
+    }
+    .css-slime .crown {
+        position: absolute;
+        top: -20px; left: 13px;
+        font-size: 20px;
+    }
+
+    /* バトル画面専用 */
+    .battle-area { background: #d5dbdb; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+    .battle-area p { text-align: center; font-weight: bold; margin: 5px 0; }
+    .battle-cards { display: flex; justify-content: space-around; gap: 5px; }
+    .battle-card {
+        flex: 1; background: #fff; border: 2px solid #7f8c8d; border-radius: 8px; padding: 8px;
+        text-align: center; font-size: 12px; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; position: relative;
+    }
+    .battle-card.dead { opacity: 0.3; filter: grayscale(100%); }
+    .battle-card.inputting { border-color: #f1c40f; box-shadow: 0 0 15px #f1c40f; transform: translateY(-5px); }
+    .battle-card.active-turn { border-color: #e67e22 !important; box-shadow: 0 0 15px #e67e22 !important; }
+    .hp-bar-bg { background: #e74c3c; height: 10px; border-radius: 5px; margin: 5px 0; overflow: hidden; }
+    .hp-bar-fill { background: #2ecc71; height: 100%; width: 100%; transition: width 0.3s; }
+    .cooldown-label { font-size: 10px; color: #8e44ad; font-weight: bold; margin-top: 2px; }
+
+    #battle-log { background: #34495e; color: #ecf0f1; height: 140px; overflow-y: auto; padding: 10px; border-radius: 8px; font-size: 13px; line-height: 1.6; margin-bottom: 120px; }
+
+    /* アニメーション */
+    @keyframes attackStepPlayer { 0% { transform: translateY(0); } 50% { transform: translateY(-30px) scale(1.1); } 100% { transform: translateY(0); } }
+    @keyframes attackStepEnemy { 0% { transform: translateY(0); } 50% { transform: translateY(30px) scale(1.1); } 100% { transform: translateY(0); } }
+    @keyframes hitShake { 0% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } 100% { transform: translateX(0); } }
+    @keyframes popText { 0% { opacity: 1; transform: translate(-50%, 0) scale(1.2); } 50% { opacity: 1; transform: translate(-50%, -20px) scale(1.5); } 100% { opacity: 0; transform: translate(-50%, -35px) scale(1); } }
+
+    .anim-attack-player { animation: attackStepPlayer 0.4s ease-in-out; }
+    .anim-attack-enemy { animation: attackStepEnemy 0.4s ease-in-out; }
+    .anim-hit { animation: hitShake 0.4s ease-in-out; border-color: #e74c3c !important; }
+    .floating-text { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 22px; font-weight: bold; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; animation: popText 0.8s ease-out forwards; pointer-events: none; z-index: 100; width: 100%; }
+
+    #command-area { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; padding: 10px 0 20px 0; border-top: 3px solid #34495e; display: none; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); z-index: 10; }
+    #command-area p { text-align: center; font-weight: bold; margin: 5px 0 10px 0; font-size: 18px; color: #e74c3c; }
+    .command-buttons { display: flex; justify-content: center; gap: 15px; }
+    .command-buttons button { width: 42%; max-width: 200px; margin: 0; padding: 12px; font-size: 15px; }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="screen-home" class="screen active">
+        <h1>スライムカードバトル</h1>
+        <div class="center-container">
+            <div class="coin-header">🪙 所持コイン: <span class="coin-val">0</span> 枚</div>
+        </div>
+        <button onclick="changeScreen('screen-stage')">⚔️ バトルに出発</button>
+        <button onclick="initDeckScreen()">📋 デッキ編成</button>
+        <button onclick="changeScreen('screen-gacha')">💎 ガチャを引く</button>
+        <button onclick="initBookScreen()" style="background-color: #8e44ad;">📖 スライム図鑑</button>
+        <button onclick="resetData()" style="background-color: #e74c3c; width: 40%; font-size: 12px; padding: 8px; margin-top: 30px;">⚠️ データ初期化</button>
+    </div>
+
+    <div id="screen-deck" class="screen">
+        <h2>デッキ編成</h2>
+        <p style="text-align:center;">タップして3枚選んでください<br>現在選択中: <span id="deck-count">0</span>/3</p>
+        <div id="inventory-list" class="card-container"></div>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+
+    <div id="screen-book" class="screen">
+        <h2>スライム図鑑</h2>
+        <p style="text-align:center;">集めたスライムの詳細が見られます</p>
+        <div id="book-list" class="card-container"></div>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+
+    <div id="screen-gacha" class="screen">
+        <h2>スライムガチャ</h2>
+        <div class="center-container">
+            <div class="coin-header">🪙 所持コイン: <span class="coin-val">0</span> 枚</div>
+        </div>
+        <p style="text-align:center; margin-bottom: 5px;">1回: <b>100 コイン</b></p>
+        <button id="btn-draw-gacha" onclick="drawGacha()" style="background-color: #f1c40f; color: #333;">ガチャを回す (100枚)</button>
+        <div id="gacha-result" style="text-align: center; font-size: 18px; margin: 15px; font-weight: bold; min-height: 25px;"></div>
+        <div id="gacha-card-display" style="display:flex; justify-content:center;"></div>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+
+    <div id="screen-stage" class="screen">
+        <h2>ステージ選択</h2>
+        <button onclick="startBattle(1)">ステージ1: 森の入り口 (報奨 100🪙)</button>
+        <button onclick="startBattle(2)">ステージ2: 火山のふもと (報奨 200🪙)</button>
+        <button onclick="startBattle(3)">ステージ3: スライム城 (報奨 500🪙)</button>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+
+    <div id="screen-battle" class="screen">
+        <h2>バトル</h2>
+        <div class="battle-area"><p>ENEMY</p><div id="enemy-battle-cards" class="battle-cards"></div></div>
+        <div class="battle-area"><p>PLAYER</p><div id="player-battle-cards" class="battle-cards"></div></div>
+        <div id="battle-log"></div>
+        <button id="btn-battle-end" class="back-btn" onclick="changeScreen('screen-home')" style="display:none; margin-bottom:50px;">ホームに戻る</button>
+    </div>
+
+    <div id="command-area">
+        <p id="command-char-name">〇〇の行動</p>
+        <div class="command-buttons">
+            <button onclick="selectCommand('attack')" style="background-color: #e67e22;">剣 通常攻撃</button>
+            <button id="btn-cmd-skill" onclick="selectCommand('skill')" style="background-color: #9b59b6;">✨ わざ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // --- データベース（イラスト色/スケールなどの情報追加） ---
+    // imageURL: "" の部分に画像のURLやパスを入れると、CSSスライムの代わりにその画像が表示されます。
+    const CARD_DB = [
+        { id: 1, name: "緑スライム", hp: 30, atk: 12, skill: "たいあたり", skillDesc: "1.3倍のダメージ", trait: "自然治癒", traitDesc: "毎ターン終了時HP5回復", rarity: "N", color: "#2ecc71", scale: 1.0, imageURL: "" },
+        { id: 2, name: "赤スライム", hp: 25, atk: 15, skill: "ひのこ", skillDesc: "1.5倍ダメ、自身3ダメ", trait: "猛火", traitDesc: "HP半分以下でダメ1.5倍", rarity: "N", color: "#e74c3c", scale: 1.0, imageURL: "" },
+        { id: 3, name: "青スライム", hp: 40, atk: 8, skill: "癒しのあわ", skillDesc: "味方1体を回復", trait: "水のベール", traitDesc: "受けるダメージ常に-2", rarity: "N", color: "#3498db", scale: 1.0, imageURL: "" },
+        { id: 4, name: "硬いスライム", hp: 50, atk: 6, skill: "ぼうぎょ", skillDesc: "このターン被ダメ半減", trait: "鉄壁", traitDesc: "30%の確率でさらに半減", rarity: "R", color: "#7f8c8d", scale: 1.1, imageURL: "" },
+        { id: 5, name: "毒スライム", hp: 25, atk: 18, skill: "どくえき", skillDesc: "必ず10追加ダメージ", trait: "毒の体", traitDesc: "通常攻撃時ダメージ+5", rarity: "R", color: "#9b59b6", scale: 1.0, imageURL: "" },
+        { id: 6, name: "キングスライム", hp: 80, atk: 25, skill: "のしかかり", skillDesc: "敵全体にダメージ", trait: "王の威圧", traitDesc: "被ダメージ10%軽減", rarity: "SR", color: "#f1c40f", scale: 1.4, imageURL: "" },
+        { id: 7, name: "メタルスライム", hp: 12, atk: 30, skill: "会心の一撃", skillDesc: "2倍の強力なダメージ", trait: "メタルボディ", traitDesc: "被ダメが1か0になる", rarity: "SR", color: "#bdc3c7", scale: 0.8, imageURL: "" }
+    ];
+
+    const STAGES = {
+        1: { enemies: [1, 1, 3], reward: 100 },
+        2: { enemies: [2, 2, 4], reward: 200 },
+        3: { enemies: [6, 5, 7], reward: 500 }
+    };
+
+    const SAVE_KEY = "slime_card_game_data";
+    let playerInventory = [1, 2, 3];
+    let playerDeck = [1, 2, 3];
+    let playerCoins = 200;
+
+    function saveData() {
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: playerInventory, deck: playerDeck, coins: playerCoins }));
+        updateCoinDisplay();
+    }
+    function loadData() {
+        const saved = localStorage.getItem(SAVE_KEY);
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                playerInventory = data.inventory || [1, 2, 3];
+                playerDeck = data.deck || [1, 2, 3];
+                playerCoins = (data.coins !== undefined) ? data.coins : 200;
+            } catch(e) {}
+        }
+        updateCoinDisplay();
+    }
+    function resetData() {
+        if (confirm("本当にデータを初期化しますか？")) {
+            localStorage.removeItem(SAVE_KEY); location.reload();
+        }
+    }
+    function updateCoinDisplay() {
+        document.querySelectorAll('.coin-val').forEach(el => el.innerText = playerCoins);
+    }
+
+    let battleState = { player: [], enemy: [], isOver: false, currentStageReward: 0 };
+    let commandQueue = [], currentCommandIndex = 0;
+
+    function changeScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        document.getElementById('command-area').style.display = 'none';
+        if (screenId === 'screen-gacha') {
+            document.getElementById('gacha-result').innerText = "";
+            document.getElementById('gacha-card-display').innerHTML = "";
+        }
+        updateCoinDisplay();
+    }
+
+    // --- イラスト生成関数 ---
+    function renderIllustration(card) {
+        // 画像URLが設定されている場合はそれを使う
+        if (card.imageURL) {
+            return `<img src="${card.imageURL}" style="max-height: 50px; max-width: 100%; object-fit: contain;">`;
+        }
+        // 設定されていない場合はCSSでスライムを描画
+        let crownHtml = card.id === 6 ? `<div class="crown">👑</div>` : '';
+        return `
+            <div class="css-slime" style="background: ${card.color}; transform: scale(${card.scale});">
+                ${crownHtml}
+                <div class="eyes"></div>
+            </div>
+        `;
+    }
+
+    // --- カードUI (図鑑・デッキ用) ---
+    function createCardHTML(card, isSelected = false, readOnly = false) {
+        let selectedClass = isSelected ? "selected" : "";
+        let onclickAttr = readOnly ? "" : `onclick="toggleDeck(${card.id})"`;
+        return `
+            <div class="card ${selectedClass}" data-id="${card.id}" ${onclickAttr}>
+                <div class="rarity">${card.rarity}</div>
+                <div class="name">${card.name}</div>
+                
+                <!-- イラスト表示エリア -->
+                <div class="illustration-box">
+                    ${renderIllustration(card)}
+                </div>
+                
+                <div class="stats">HP: <span class="hp">${card.hp}</span> / ATK: <span class="atk">${card.atk}</span></div>
+                <div class="title-label">⚔️ ${card.skill}</div>
+                <div class="desc">${card.skillDesc}</div>
+                <div class="title-label">✨ ${card.trait}</div>
+                <div class="desc">${card.traitDesc}</div>
+            </div>
+        `;
+    }
+
+    function initDeckScreen() {
+        changeScreen('screen-deck');
+        const list = document.getElementById('inventory-list');
+        list.innerHTML = "";
+        playerInventory.forEach(cardId => {
+            let cardData = CARD_DB.find(c => c.id === cardId);
+            list.innerHTML += createCardHTML(cardData, playerDeck.includes(cardId), false);
+        });
+        document.getElementById('deck-count').innerText = playerDeck.length;
+    }
+
+    function toggleDeck(cardId) {
+        let index = playerDeck.indexOf(cardId);
+        if (index > -1) playerDeck.splice(index, 1);
+        else if (playerDeck.length < 3) playerDeck.push(cardId);
+        else alert("デッキは3枚までです！");
+        saveData(); initDeckScreen();
+    }
+
+    function initBookScreen() {
+        changeScreen('screen-book');
+        const list = document.getElementById('book-list');
+        list.innerHTML = "";
+        CARD_DB.forEach(card => {
+            if (playerInventory.includes(card.id)) list.innerHTML += createCardHTML(card, false, true);
+            else list.innerHTML += `<div class="card unknown"><div>???</div></div>`;
+        });
+    }
+
+    function drawGacha() {
+        if (playerCoins < 100) return alert("コインが足りません！");
+        playerCoins -= 100;
+        let newCard = CARD_DB[Math.floor(Math.random() * CARD_DB.length)];
+        if (!playerInventory.includes(newCard.id)) {
+            playerInventory.push(newCard.id);
+            document.getElementById('gacha-result').innerHTML = "<span style='color:#e74c3c;'>🎉 NEW! 初獲得!</span>";
+        } else {
+            document.getElementById('gacha-result').innerHTML = "すでに入手済みのカードだ！";
+        }
+        saveData();
+        document.getElementById('gacha-card-display').innerHTML = createCardHTML(newCard, false, true);
+    }
+
+    // --- バトルUI ---
+    function startBattle(stageId) {
+        if (playerDeck.length !== 3) return alert("デッキを3枚編成してください！");
+        changeScreen('screen-battle');
+        document.getElementById('btn-battle-end').style.display = 'none';
+        document.getElementById('battle-log').innerHTML = "バトル開始！<br>";
+
+        let stageInfo = STAGES[stageId];
+        battleState.currentStageReward = stageInfo.reward;
+
+        battleState.player = playerDeck.map((id, index) => ({ ...CARD_DB.find(c => c.id === id), currentHp: CARD_DB.find(c => c.id === id).hp, uid: 'p'+index, isDefending: false, cooldown: 0 }));
+        battleState.enemy = stageInfo.enemies.map((id, index) => ({ ...CARD_DB.find(c => c.id === id), currentHp: CARD_DB.find(c => c.id === id).hp, uid: 'e'+index, isDefending: false, cooldown: 0 }));
+        
+        battleState.isOver = false;
+        startCommandPhase();
+    }
+
+    function updateBattleUI() {
+        const renderBattleCard = (fighter) => {
+            let hpPercent = Math.max(0, (fighter.currentHp / fighter.hp) * 100);
+            let stateClass = fighter.currentHp <= 0 ? "dead" : ((!battleState.isOver && battleState.player[currentCommandIndex]?.uid === fighter.uid) ? "inputting" : "");
+            let cdText = fighter.cooldown > 0 ? `<div class="cooldown-label">⏳ 技CT: ${fighter.cooldown}T</div>` : `<div class="cooldown-label" style="color:#27ae60;">✨ 技OK</div>`;
+            return `
+                <div class="battle-card ${stateClass}" id="card-${fighter.uid}">
+                    <div style="font-weight:bold;">${fighter.name}</div>
+                    <div class="illustration-box" style="transform: scale(0.8); height: 45px; margin: 5px 0;">
+                        ${renderIllustration(fighter)}
+                    </div>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width: ${hpPercent}%;"></div></div>
+                    <div>HP: ${fighter.currentHp}/${fighter.hp}</div>
+                    ${cdText}
+                </div>
+            `;
+        };
+        document.getElementById('player-battle-cards').innerHTML = battleState.player.map(renderBattleCard).join('');
+        document.getElementById('enemy-battle-cards').innerHTML = battleState.enemy.map(renderBattleCard).join('');
+    }
+
+    function logMsg(msg, color = "#fff") {
+        const logArea = document.getElementById('battle-log');
+        logArea.innerHTML += `<span style="color:${color}">${msg}</span><br>`;
+        logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function showFloatingText(uid, text, color) {
+        const cardElem = document.getElementById(`card-${uid}`);
+        if (!cardElem) return;
+        const floatEl = document.createElement('div');
+        floatEl.className = 'floating-text'; floatEl.style.color = color; floatEl.innerText = text;
+        cardElem.appendChild(floatEl); setTimeout(() => floatEl.remove(), 800);
+    }
+    async function animateAttack(uid, team) {
+        const c = document.getElementById(`card-${uid}`); if(!c) return;
+        c.classList.add(team === 'player' ? 'anim-attack-player' : 'anim-attack-enemy'); await sleep(400);
+        c.classList.remove(team === 'player' ? 'anim-attack-player' : 'anim-attack-enemy');
+    }
+    async function animateHit(uid) {
+        const c = document.getElementById(`card-${uid}`); if(!c) return;
+        c.classList.add('anim-hit'); await sleep(400); c.classList.remove('anim-hit');
+    }
+
+    function startCommandPhase() {
+        commandQueue = []; currentCommandIndex = 0; showNextCommandUI();
+    }
+
+    function showNextCommandUI() {
+        if(battleState.isOver) return;
+        while (currentCommandIndex < battleState.player.length && battleState.player[currentCommandIndex].currentHp <= 0) currentCommandIndex++;
+        if (currentCommandIndex >= battleState.player.length) {
+            document.getElementById('command-area').style.display = 'none'; executeTurn(); return;
+        }
+        let char = battleState.player[currentCommandIndex];
+        document.getElementById('command-char-name').innerText = `【 ${char.name} 】の行動`;
+        const btnSkill = document.getElementById('btn-cmd-skill');
+        if (char.cooldown > 0) { btnSkill.disabled = true; btnSkill.innerText = `⏳ 技 (あと${char.cooldown}T)`; }
+        else { btnSkill.disabled = false; btnSkill.innerText = `✨ ${char.skill}`; }
+        document.getElementById('command-area').style.display = 'block'; updateBattleUI();
+    }
+
+    function selectCommand(type) {
+        commandQueue.push({ actor: battleState.player[currentCommandIndex], team: 'player', type: type });
+        currentCommandIndex++; showNextCommandUI();
+    }
+
+    async function executeTurn() {
+        logMsg("-------------------------", "#bdc3c7"); logMsg("ターン開始！", "#f1c40f");
+        battleState.enemy.forEach(e => {
+            if(e.currentHp > 0) commandQueue.push({ actor: e, team: 'enemy', type: (e.cooldown === 0 && Math.random() < 0.5) ? 'skill' : 'attack' });
+        });
+        commandQueue.sort(() => Math.random() - 0.5);
+
+        for (let cmd of commandQueue) {
+            if (battleState.isOver) break;
+            let actor = cmd.actor; if (actor.currentHp <= 0) continue;
+            actor.isDefending = false;
+            let targets = cmd.team === 'player' ? battleState.enemy.filter(e=>e.currentHp>0) : battleState.player.filter(p=>p.currentHp>0);
+            let allies = cmd.team === 'player' ? battleState.player.filter(p=>p.currentHp>0) : battleState.enemy.filter(e=>e.currentHp>0);
+            if (targets.length === 0) continue;
+            let target = targets[Math.floor(Math.random() * targets.length)];
+            let color = cmd.team === 'player' ? "#3498db" : "#e74c3c";
+
+            const actorCard = document.getElementById(`card-${actor.uid}`);
+            if (actorCard) actorCard.classList.add('active-turn');
+            await sleep(300); await animateAttack(actor.uid, cmd.team);
+
+            if (cmd.type === 'attack') {
+                let dmg = calculateDamage(actor, target, actor.atk);
+                if (actor.id === 5) dmg += 5;
+                dealDamage(target, dmg);
+                showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid);
+                logMsg(`[${actor.name}]の通常攻撃！ ${target.name}に ${dmg} のダメージ！`, color);
+            } else {
+                actor.cooldown = 3; await processSkillAsync(actor, target, targets, allies, color);
+            }
+
+            if (actorCard) actorCard.classList.remove('active-turn');
+            updateBattleUI(); checkWinLoss(); await sleep(500);
+        }
+
+        if (!battleState.isOver) {
+            [...battleState.player, ...battleState.enemy].forEach(c => {
+                if (c.cooldown > 0) c.cooldown--;
+                if (c.currentHp > 0 && c.id === 1) {
+                    c.currentHp = Math.min(c.hp, c.currentHp + 5);
+                    showFloatingText(c.uid, "+5", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の自然治癒！HPが5回復！`, "#2ecc71");
+                }
+            });
+            updateBattleUI(); if (!battleState.isOver) { await sleep(400); startCommandPhase(); }
+        }
+    }
+
+    function calculateDamage(attacker, defender, baseDmg) {
+        let dmg = Math.floor(baseDmg * (0.8 + Math.random() * 0.4));
+        if(attacker.id === 2 && attacker.currentHp <= attacker.hp / 2) dmg = Math.floor(dmg * 1.5);
+        if(defender.id === 3) dmg -= 2;
+        if(defender.id === 4 && Math.random() < 0.3) dmg = Math.floor(dmg / 2);
+        if(defender.id === 6) dmg = Math.floor(dmg * 0.9);
+        if(defender.isDefending) dmg = Math.floor(dmg / 2);
+        if(defender.id === 7) dmg = Math.random() < 0.5 ? 1 : 0;
+        return dmg < 0 ? 0 : dmg;
+    }
+    function dealDamage(target, amount) { target.currentHp = Math.max(0, target.currentHp - amount); }
+
+    async function processSkillAsync(actor, target, targets, allies, color) {
+        let dmg = 0;
+        switch(actor.id) {
+            case 1: dmg = calculateDamage(actor, target, actor.atk * 1.3); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
+            case 2: dmg = calculateDamage(actor, target, actor.atk * 1.5); dealDamage(target, dmg); actor.currentHp = Math.max(0, actor.currentHp - 3); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); showFloatingText(actor.uid, `-3`, "#ff7979"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！(反動3)`, color); break;
+            case 3: let lowest = allies.sort((a,b) => (a.currentHp/a.hp) - (b.currentHp/b.hp))[0]; let heal = Math.floor(actor.atk * 2); lowest.currentHp = Math.min(lowest.hp, lowest.currentHp + heal); showFloatingText(lowest.uid, `+${heal}`, "#2ecc71"); logMsg(`[${actor.name}]の ${actor.skill}！ ${lowest.name}のHPが ${heal} 回復！`, "#2ecc71"); await sleep(400); break;
+            case 4: actor.isDefending = true; showFloatingText(actor.uid, "DEFENSE", "#3498db"); logMsg(`[${actor.name}]は ${actor.skill} を使って身を固めた！`, color); await sleep(400); break;
+            case 5: dmg = calculateDamage(actor, target, actor.atk * 0.8) + 10; dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#9b59b6"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
+            case 6: logMsg(`[${actor.name}]の ${actor.skill}！全体攻撃！`, color); for (let t of targets) { let d = calculateDamage(actor, t, actor.atk * 0.8); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e74c3c"); animateHit(t.uid); } await sleep(500); break;
+            case 7: dmg = calculateDamage(actor, target, actor.atk * 2); dealDamage(target, dmg); showFloatingText(target.uid, `CRITICAL -${dmg}`, "#f1c40f"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！！ ${target.name}に ${dmg} の大ダメージ！`, "#f1c40f"); break;
+        }
+    }
+
+    function checkWinLoss() {
+        if(battleState.isOver) return;
+        if (!battleState.enemy.some(e => e.currentHp > 0)) {
+            playerCoins += battleState.currentStageReward; saveData();
+            logMsg(`<br>🎉 勝利しました！！ コインを 🪙<b>${battleState.currentStageReward}</b> 枚獲得！`, "#f1c40f"); endBattle();
+        } else if (!battleState.player.some(p => p.currentHp > 0)) {
+            logMsg("<br>💀 敗北しました...", "#e74c3c"); endBattle();
+        }
+    }
+    function endBattle() {
+        battleState.isOver = true; document.getElementById('command-area').style.display = 'none';
+        document.getElementById('btn-battle-end').style.display = 'block'; updateBattleUI();
+    }
+
+    window.onload = loadData;
+</script>
+</body>
+</html>
