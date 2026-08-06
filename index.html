@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver5</title>
+<title>スライムカードバトル Ver6</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -212,6 +212,8 @@
         <button onclick="startBattle(1)">ステージ1: 森の入り口 (報奨 100🪙)</button>
         <button onclick="startBattle(2)">ステージ2: 火山のふもと (報奨 200🪙)</button>
         <button onclick="startBattle(3)">ステージ3: スライム城 (報奨 500🪙)</button>
+        <!-- イベントステージ -->
+        <button onclick="startBattle(4)" style="background-color: #e67e22; border: 2px solid #f1c40f;">🌺 イベント: 南のビーチ (1%で限定キャラ! 300🪙)</button>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
@@ -235,22 +237,25 @@
 <script>
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // --- データベース（イラスト色/スケールなどの情報追加） ---
-    // imageURL: "" の部分に画像のURLやパスを入れると、CSSスライムの代わりにその画像が表示されます。
+    // --- データベース ---
+    // gachaRate: ガチャでの排出重み（数字が大きいほど出やすく、0ならガチャから出ません）
     const CARD_DB = [
-        { id: 1, name: "緑スライム", hp: 30, atk: 12, skill: "たいあたり", skillDesc: "1.3倍のダメージ", trait: "自然治癒", traitDesc: "毎ターン終了時HP5回復", rarity: "N", color: "#2ecc71", scale: 1.0, imageURL: "" },
-        { id: 2, name: "赤スライム", hp: 25, atk: 15, skill: "ひのこ", skillDesc: "1.5倍ダメ、自身3ダメ", trait: "猛火", traitDesc: "HP半分以下でダメ1.5倍", rarity: "N", color: "#e74c3c", scale: 1.0, imageURL: "" },
-        { id: 3, name: "青スライム", hp: 40, atk: 8, skill: "癒しのあわ", skillDesc: "味方1体を回復", trait: "水のベール", traitDesc: "受けるダメージ常に-2", rarity: "N", color: "#3498db", scale: 1.0, imageURL: "" },
-        { id: 4, name: "硬いスライム", hp: 50, atk: 6, skill: "ぼうぎょ", skillDesc: "このターン被ダメ半減", trait: "鉄壁", traitDesc: "30%の確率でさらに半減", rarity: "R", color: "#7f8c8d", scale: 1.1, imageURL: "" },
-        { id: 5, name: "毒スライム", hp: 25, atk: 18, skill: "どくえき", skillDesc: "必ず10追加ダメージ", trait: "毒の体", traitDesc: "通常攻撃時ダメージ+5", rarity: "R", color: "#9b59b6", scale: 1.0, imageURL: "" },
-        { id: 6, name: "キングスライム", hp: 80, atk: 25, skill: "のしかかり", skillDesc: "敵全体にダメージ", trait: "王の威圧", traitDesc: "被ダメージ10%軽減", rarity: "SR", color: "#f1c40f", scale: 1.4, imageURL: "" },
-        { id: 7, name: "メタルスライム", hp: 12, atk: 30, skill: "会心の一撃", skillDesc: "2倍の強力なダメージ", trait: "メタルボディ", traitDesc: "被ダメが1か0になる", rarity: "SR", color: "#bdc3c7", scale: 0.8, imageURL: "" }
+        { id: 1, name: "緑スライム", hp: 30, atk: 12, skill: "たいあたり", skillDesc: "1.3倍のダメージ", trait: "自然治癒", traitDesc: "毎ターン終了時HP5回復", rarity: "N", color: "#2ecc71", scale: 1.0, imageURL: "", gachaRate: 30 },
+        { id: 2, name: "赤スライム", hp: 25, atk: 15, skill: "ひのこ", skillDesc: "1.5倍ダメ、自身3ダメ", trait: "猛火", traitDesc: "HP半分以下でダメ1.5倍", rarity: "N", color: "#e74c3c", scale: 1.0, imageURL: "", gachaRate: 30 },
+        { id: 3, name: "青スライム", hp: 40, atk: 8, skill: "癒しのあわ", skillDesc: "味方1体を回復", trait: "水のベール", traitDesc: "受けるダメージ常に-2", rarity: "N", color: "#3498db", scale: 1.0, imageURL: "", gachaRate: 30 },
+        { id: 4, name: "硬いスライム", hp: 50, atk: 6, skill: "ぼうぎょ", skillDesc: "このターン被ダメ半減", trait: "鉄壁", traitDesc: "30%の確率でさらに半減", rarity: "R", color: "#7f8c8d", scale: 1.1, imageURL: "", gachaRate: 15 },
+        { id: 5, name: "毒スライム", hp: 25, atk: 18, skill: "どくえき", skillDesc: "必ず10追加ダメージ", trait: "毒の体", traitDesc: "通常攻撃時ダメージ+5", rarity: "R", color: "#9b59b6", scale: 1.0, imageURL: "", gachaRate: 15 },
+        { id: 6, name: "キングスライム", hp: 80, atk: 25, skill: "のしかかり", skillDesc: "敵全体にダメージ", trait: "王の威圧", traitDesc: "被ダメージ10%軽減", rarity: "SR", color: "#f1c40f", scale: 1.4, imageURL: "", gachaRate: 3 },
+        { id: 7, name: "メタルスライム", hp: 12, atk: 30, skill: "会心の一撃", skillDesc: "2倍の強力なダメージ", trait: "メタルボディ", traitDesc: "被ダメが1か0になる", rarity: "SR", color: "#bdc3c7", scale: 0.8, imageURL: "", gachaRate: 2 },
+        // ガチャ率0でガチャからは出現しないサマースライム
+        { id: 8, name: "サマースライム", hp: 35, atk: 10, skill: "ウォーターラッシュ", skillDesc: "ランダムな敵に5回攻撃", trait: "サマーリフレッシュ", traitDesc: "与ダメのたびHP2回復", rarity: "EX", color: "#00ced1", scale: 1.1, imageURL: "", gachaRate: 0 }
     ];
 
     const STAGES = {
-        1: { enemies: [1, 1, 3], reward: 100 },
-        2: { enemies: [2, 2, 4], reward: 200 },
-        3: { enemies: [6, 5, 7], reward: 500 }
+        1: { enemies: [1, 1, 3], reward: 100, isEvent: false },
+        2: { enemies: [2, 2, 4], reward: 200, isEvent: false },
+        3: { enemies: [6, 5, 7], reward: 500, isEvent: false },
+        4: { enemies: [8, 3, 8], reward: 300, isEvent: true } // イベントステージ
     };
 
     const SAVE_KEY = "slime_card_game_data";
@@ -283,7 +288,7 @@
         document.querySelectorAll('.coin-val').forEach(el => el.innerText = playerCoins);
     }
 
-    let battleState = { player: [], enemy: [], isOver: false, currentStageReward: 0 };
+    let battleState = { player: [], enemy: [], isOver: false, currentStageReward: 0, currentStageId: 1 };
     let commandQueue = [], currentCommandIndex = 0;
 
     function changeScreen(screenId) {
@@ -299,12 +304,13 @@
 
     // --- イラスト生成関数 ---
     function renderIllustration(card) {
-        // 画像URLが設定されている場合はそれを使う
         if (card.imageURL) {
             return `<img src="${card.imageURL}" style="max-height: 50px; max-width: 100%; object-fit: contain;">`;
         }
-        // 設定されていない場合はCSSでスライムを描画
-        let crownHtml = card.id === 6 ? `<div class="crown">👑</div>` : '';
+        let crownHtml = '';
+        if (card.id === 6) crownHtml = `<div class="crown">👑</div>`;
+        if (card.id === 8) crownHtml = `<div class="crown">🌺</div>`;
+        
         return `
             <div class="css-slime" style="background: ${card.color}; transform: scale(${card.scale});">
                 ${crownHtml}
@@ -322,7 +328,6 @@
                 <div class="rarity">${card.rarity}</div>
                 <div class="name">${card.name}</div>
                 
-                <!-- イラスト表示エリア -->
                 <div class="illustration-box">
                     ${renderIllustration(card)}
                 </div>
@@ -365,10 +370,26 @@
         });
     }
 
+    // --- ガチャ処理（キャラごとに gachaRate を設定できる重み抽出） ---
     function drawGacha() {
         if (playerCoins < 100) return alert("コインが足りません！");
+
+        // gachaRate が 0 より大きいカードのみ抽出
+        const availableCards = CARD_DB.filter(c => c.gachaRate && c.gachaRate > 0);
+        const totalRate = availableCards.reduce((sum, c) => sum + c.gachaRate, 0);
+
+        let rand = Math.random() * totalRate;
+        let newCard = null;
+        for (let c of availableCards) {
+            if (rand < c.gachaRate) {
+                newCard = c;
+                break;
+            }
+            rand -= c.gachaRate;
+        }
+        if (!newCard) newCard = availableCards[0];
+
         playerCoins -= 100;
-        let newCard = CARD_DB[Math.floor(Math.random() * CARD_DB.length)];
         if (!playerInventory.includes(newCard.id)) {
             playerInventory.push(newCard.id);
             document.getElementById('gacha-result').innerHTML = "<span style='color:#e74c3c;'>🎉 NEW! 初獲得!</span>";
@@ -387,6 +408,7 @@
         document.getElementById('battle-log').innerHTML = "バトル開始！<br>";
 
         let stageInfo = STAGES[stageId];
+        battleState.currentStageId = stageId;
         battleState.currentStageReward = stageInfo.reward;
 
         battleState.player = playerDeck.map((id, index) => ({ ...CARD_DB.find(c => c.id === id), currentHp: CARD_DB.find(c => c.id === id).hp, uid: 'p'+index, isDefending: false, cooldown: 0 }));
@@ -400,7 +422,7 @@
         const renderBattleCard = (fighter) => {
             let hpPercent = Math.max(0, (fighter.currentHp / fighter.hp) * 100);
             let stateClass = fighter.currentHp <= 0 ? "dead" : ((!battleState.isOver && battleState.player[currentCommandIndex]?.uid === fighter.uid) ? "inputting" : "");
-            let cdText = fighter.cooldown > 0 ? `<div class="cooldown-label">⏳ 技CT: ${fighter.cooldown}T</div>` : `<div class="cooldown-label" style="color:#27ae60;">✨ 技OK</div>`;
+            let cdText = fighter.cooldown > 0 ? `<div class="cooldown-label">⏳ 技CT: ${fighter.cooldown}T</div>` : `<div class="cooldown-label" style="color:#2ecc71;">✨ 技OK</div>`;
             return `
                 <div class="battle-card ${stateClass}" id="card-${fighter.uid}">
                     <div style="font-weight:bold;">${fighter.name}</div>
@@ -490,6 +512,13 @@
                 dealDamage(target, dmg);
                 showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid);
                 logMsg(`[${actor.name}]の通常攻撃！ ${target.name}に ${dmg} のダメージ！`, color);
+
+                // サマースライムの特性: ダメージを与えるたびにHP2回復
+                if (actor.id === 8 && dmg > 0 && actor.currentHp > 0) {
+                    actor.currentHp = Math.min(actor.hp, actor.currentHp + 2);
+                    showFloatingText(actor.uid, "+2", "#2ecc71");
+                    logMsg(`✨ [特性] ${actor.name}のHPが2回復！`, "#2ecc71");
+                }
             } else {
                 actor.cooldown = 3; await processSkillAsync(actor, target, targets, allies, color);
             }
@@ -532,14 +561,53 @@
             case 5: dmg = calculateDamage(actor, target, actor.atk * 0.8) + 10; dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#9b59b6"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
             case 6: logMsg(`[${actor.name}]の ${actor.skill}！全体攻撃！`, color); for (let t of targets) { let d = calculateDamage(actor, t, actor.atk * 0.8); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e74c3c"); animateHit(t.uid); } await sleep(500); break;
             case 7: dmg = calculateDamage(actor, target, actor.atk * 2); dealDamage(target, dmg); showFloatingText(target.uid, `CRITICAL -${dmg}`, "#f1c40f"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！！ ${target.name}に ${dmg} の大ダメージ！`, "#f1c40f"); break;
+            
+            // サマースライムの技：ランダムな敵に5回攻撃＆ダメージごとにHP2回復
+            case 8:
+                logMsg(`[${actor.name}]の ${actor.skill}！ランダム5回連撃！`, color);
+                for (let i = 0; i < 5; i++) {
+                    let aliveTargets = targets.filter(t => t.currentHp > 0);
+                    if (aliveTargets.length === 0) break;
+                    let randTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+                    let d = calculateDamage(actor, randTarget, actor.atk * 0.7);
+                    dealDamage(randTarget, d);
+                    showFloatingText(randTarget.uid, `-${d}`, "#00ced1");
+                    animateHit(randTarget.uid);
+                    
+                    // 特性: ダメージを与えるたびにHP2回復
+                    if (d > 0 && actor.currentHp > 0) {
+                        actor.currentHp = Math.min(actor.hp, actor.currentHp + 2);
+                        showFloatingText(actor.uid, "+2", "#2ecc71");
+                    }
+                    logMsg(` -> ${randTarget.name}に ${d} ダメージ！`, color);
+                    await sleep(250);
+                }
+                break;
         }
     }
 
     function checkWinLoss() {
         if(battleState.isOver) return;
         if (!battleState.enemy.some(e => e.currentHp > 0)) {
-            playerCoins += battleState.currentStageReward; saveData();
-            logMsg(`<br>🎉 勝利しました！！ コインを 🪙<b>${battleState.currentStageReward}</b> 枚獲得！`, "#f1c40f"); endBattle();
+            playerCoins += battleState.currentStageReward;
+            let logRewardMsg = `<br>🎉 勝利しました！！ コインを 🪙<b>${battleState.currentStageReward}</b> 枚獲得！`;
+
+            // イベントステージクリア時、1% (0.01) の確率でサマースライム獲得
+            let currentStage = STAGES[battleState.currentStageId];
+            if (currentStage && currentStage.isEvent) {
+                if (Math.random() < 0.01) { // 1%の確率
+                    let dropCard = CARD_DB.find(c => c.id === 8);
+                    if (!playerInventory.includes(dropCard.id)) {
+                        playerInventory.push(dropCard.id);
+                        logRewardMsg += `<br><span style="color:#f39c12; font-size:16px;">✨【1%超激レアGET】${dropCard.name} を獲得しました！！</span>`;
+                    } else {
+                        logRewardMsg += `<br><span style="color:#f39c12;">✨ サマースライムがドロップ！（すでに入手済み）</span>`;
+                    }
+                }
+            }
+
+            saveData();
+            logMsg(logRewardMsg, "#f1c40f"); endBattle();
         } else if (!battleState.player.some(p => p.currentHp > 0)) {
             logMsg("<br>💀 敗北しました...", "#e74c3c"); endBattle();
         }
