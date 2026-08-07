@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver9 - サマーアップデート追加</title>
+<title>スライムカードバトル Ver9 - サマーアップデート＆エンドレス追加</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -172,17 +172,14 @@
     <div id="screen-home" class="screen active">
         <h1>スライムカードバトル</h1>
         <div class="center-container">
-            <!-- サマーコインの表示を追加 -->
             <div class="coin-header">🪙 <span class="coin-val">0</span> 枚 ｜ 🏖️ <span class="summer-coin-val">0</span> 枚</div>
         </div>
 
-        <!-- 既存のショップボタン -->
         <div style="display: flex; justify-content: center; gap: 10px; width: 80%; max-width: 400px; margin: 10px auto;">
             <button id="btn-buy-galaxy" onclick="buySlime(9, 20000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #4b0082;">🌌 ギャラクシー<br>(20000🪙)</button>
             <button id="btn-buy-meteor" onclick="buySlime(10, 17000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #d35400;">☄️ メテオ<br>(17000🪙)</button>
         </div>
 
-        <!-- サマーショップを追加 -->
         <div style="background-color: #e0f7fa; padding: 10px; border-radius: 8px; margin: 15px auto; width: 80%; max-width: 400px; text-align: center; border: 2px solid #00acc1;">
             <h3 style="margin: 0 0 10px 0; color: #00838f; font-size: 15px;">🏖️ サマーショップ</h3>
             <button id="btn-buy-seawater" onclick="buySummerSlime(14, 35)" style="margin: 0 auto; padding: 10px 5px; font-size: 13px; background-color: #00acc1; width: 90%;">🌊 海水スライム<br>(35🏖️)</button>
@@ -203,7 +200,6 @@
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
-    <!-- クラフト画面 -->
     <div id="screen-craft" class="screen">
         <h2>スライム合成</h2>
         <div style="text-align:center; margin-bottom: 20px;">
@@ -244,7 +240,10 @@
         <button onclick="startBattle(2)">ステージ2: 火山のふもと (報奨 200🪙)</button>
         <button onclick="startBattle(3)">ステージ3: スライム城 (報奨 500🪙)</button>
         <button onclick="startBattle(4)" style="background-color: #e67e22; border: 2px solid #f1c40f;">🌺 イベント: 南のビーチ (報奨 300🪙+1🏖️)</button>
-        <button onclick="startBattle(5)" style="background-color: #8e44ad; border: 2px solid #9b59b6; margin-top:15px; padding: 20px;">💀 新ステージ: 魔王の玉座<br>(ボスバトル / 報奨 1500🪙)</button>
+        <button onclick="startBattle(5)" style="background-color: #8e44ad; border: 2px solid #9b59b6; margin-top:15px; padding: 15px;">💀 ステージ5: 魔王の玉座<br>(ボスバトル / 報奨 1500🪙)</button>
+        
+        <button onclick="startBattle('endless')" style="background-color: #c0392b; border: 2px solid #e74c3c; margin-top:15px; padding: 15px;">♾️ 新モード: エンドレスモード<br>(無限バトル / 3体討伐ごとに全体回復)</button>
+        
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
@@ -284,11 +283,8 @@
         { id: 11, name: "光スライム", hp: 50, atk: 3, skill: "ホーリーヒール", skillDesc: "味方全体のHPを10回復", trait: "光の加護", traitDesc: "毎ターン自分のHPを5回復", rarity: "SR", color: "#f1c40f", scale: 1.0, imageURL: "", gachaRate: 10 },
         { id: 12, name: "闇スライム", hp: 47, atk: 12, skill: "ダークバレット", skillDesc: "ランダムな敵2体にダメージ", trait: "闇の衝動", traitDesc: "毎ターンATK+1", rarity: "SR", color: "#2c3e50", scale: 1.0, imageURL: "", gachaRate: 10 },
         { id: 13, name: "光闇スライム", hp: 50, atk: 5, skill: "カオスサークル", skillDesc: "味方全体HP7回復＆敵全体に虚無", trait: "混沌の再生", traitDesc: "毎ターン自分のHPを5回復", rarity: "UR", color: "linear-gradient(135deg, #f1c40f 50%, #2c3e50 50%)", scale: 1.2, imageURL: "", gachaRate: 0 },
-        
-        // 新規追加キャラクター
         { id: 14, name: "海水スライム", hp: 45, atk: 12, skill: "スプラッシュ", skillDesc: "全体ダメージ＆20%でスタン", trait: "海の癒し", traitDesc: "スタンするごとにHP7回復", rarity: "EX", color: "#00acc1", scale: 1.1, imageURL: "", gachaRate: 0 },
 
-        // ボス専用キャラクター
         { id: 99, name: "魔王スライム", hp: 800, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
     ];
 
@@ -296,7 +292,7 @@
         1: { enemies: [1, 1, 3], reward: 100, isEvent: false },
         2: { enemies: [2, 2, 4], reward: 200, isEvent: false },
         3: { enemies: [6, 5, 7], reward: 500, isEvent: false },
-        4: { enemies: [8, 3, 8], reward: 300, isEvent: true }, // イベントステージ（ここでサマーコインゲット）
+        4: { enemies: [8, 3, 8], reward: 300, isEvent: true },
         5: { enemies: [99], reward: 1500, isEvent: false }
     };
 
@@ -304,14 +300,14 @@
     let playerInventory = [1, 2, 3];
     let playerDeck = [1, 2, 3];
     let playerCoins = 200;
-    let playerSummerCoins = 0; // 追加
+    let playerSummerCoins = 0;
 
     function saveData() {
         localStorage.setItem(SAVE_KEY, JSON.stringify({ 
             inventory: playerInventory, 
             deck: playerDeck, 
             coins: playerCoins,
-            summerCoins: playerSummerCoins // 保存処理追加
+            summerCoins: playerSummerCoins
         }));
         updateCoinDisplay();
         updateShopButtons();
@@ -324,7 +320,7 @@
                 playerInventory = data.inventory || [1, 2, 3];
                 playerDeck = data.deck || [1, 2, 3];
                 playerCoins = (data.coins !== undefined) ? data.coins : 200;
-                playerSummerCoins = (data.summerCoins !== undefined) ? data.summerCoins : 0; // 読み込み処理追加
+                playerSummerCoins = (data.summerCoins !== undefined) ? data.summerCoins : 0;
             } catch(e) {}
         }
         updateCoinDisplay();
@@ -337,10 +333,9 @@
     }
     function updateCoinDisplay() {
         document.querySelectorAll('.coin-val').forEach(el => el.innerText = playerCoins);
-        document.querySelectorAll('.summer-coin-val').forEach(el => el.innerText = playerSummerCoins); // サマーコイン表示追加
+        document.querySelectorAll('.summer-coin-val').forEach(el => el.innerText = playerSummerCoins);
     }
 
-    // ショップボタンの状態
     function updateShopButtons() {
         const btnGalaxy = document.getElementById('btn-buy-galaxy');
         const btnMeteor = document.getElementById('btn-buy-meteor');
@@ -377,7 +372,6 @@
         alert(`🎉 ${card.name} を購入しました！`);
     }
 
-    // サマーコイン用購入処理追加
     function buySummerSlime(cardId, price) {
         if (playerInventory.includes(cardId)) return alert("すでに所持しています！");
         if (playerSummerCoins < price) return alert("サマーコインが足りません！");
@@ -386,7 +380,6 @@
         alert(`🎉 ${card.name} を購入しました！`);
     }
 
-    // --- クラフト処理 ---
     function craftLightDark() {
         if (!playerInventory.includes(11) || !playerInventory.includes(12)) {
             return alert("光スライムと闇スライムが両方必要です！\nガチャで入手してください。");
@@ -404,7 +397,17 @@
         changeScreen('screen-home');
     }
 
-    let battleState = { player: [], enemy: [], isOver: false, currentStageReward: 0, currentStageId: 1 };
+    // --- エンドレスモード機能拡張用変数 ---
+    let battleState = { 
+        player: [], 
+        enemy: [], 
+        isOver: false, 
+        currentStageReward: 0, 
+        currentStageId: 1,
+        isEndless: false,
+        endlessWave: 1,
+        defeatedCount: 0 
+    };
     let commandQueue = [], currentCommandIndex = 0;
 
     function changeScreen(screenId) {
@@ -510,7 +513,6 @@
         document.getElementById('gacha-card-display').innerHTML = createCardHTML(newCard, false, true);
     }
 
-    // --- エフェクト処理 ---
     function playSkillEffect(targetUid, type) {
         const targetElem = document.getElementById(`card-${targetUid}`);
         if(!targetElem) return;
@@ -527,56 +529,16 @@
         effect.style.textShadow = '0 0 10px rgba(255,255,255,0.8)';
         
         switch(type) {
-            case 'slash':
-                effect.innerHTML = '💥';
-                effect.style.fontSize = '50px';
-                effect.style.animation = 'popText 0.5s ease-out forwards';
-                break;
-            case 'fire':
-                effect.innerHTML = '🔥';
-                effect.style.fontSize = '60px';
-                effect.style.animation = 'popText 0.6s ease-out forwards';
-                break;
-            case 'water':
-                effect.innerHTML = '💧';
-                effect.style.fontSize = '50px';
-                effect.style.animation = 'popText 0.6s ease-out forwards';
-                break;
-            case 'heal':
-                effect.innerHTML = '✨';
-                effect.style.fontSize = '50px';
-                effect.style.animation = 'popText 0.8s ease-out forwards';
-                break;
-            case 'poison':
-                effect.innerHTML = '☠️';
-                effect.style.fontSize = '50px';
-                effect.style.animation = 'popText 0.6s ease-out forwards';
-                break;
-            case 'guard':
-                effect.innerHTML = '🛡️';
-                effect.style.fontSize = '60px';
-                effect.style.animation = 'popText 0.6s ease-out forwards';
-                break;
-            case 'critical':
-                effect.innerHTML = '⚡️';
-                effect.style.fontSize = '70px';
-                effect.style.animation = 'popText 0.5s ease-out forwards';
-                break;
-            case 'void':
-                effect.innerHTML = '🌌';
-                effect.style.fontSize = '60px';
-                effect.style.animation = 'popText 0.8s ease-out forwards';
-                break;
-            case 'meteor':
-                effect.innerHTML = '☄️';
-                effect.style.fontSize = '80px';
-                effect.style.animation = 'popText 0.8s ease-out forwards';
-                break;
-            case 'darkness':
-                effect.innerHTML = '🌑';
-                effect.style.fontSize = '100px';
-                effect.style.animation = 'popText 1s ease-out forwards';
-                break;
+            case 'slash': effect.innerHTML = '💥'; effect.style.fontSize = '50px'; effect.style.animation = 'popText 0.5s ease-out forwards'; break;
+            case 'fire': effect.innerHTML = '🔥'; effect.style.fontSize = '60px'; effect.style.animation = 'popText 0.6s ease-out forwards'; break;
+            case 'water': effect.innerHTML = '💧'; effect.style.fontSize = '50px'; effect.style.animation = 'popText 0.6s ease-out forwards'; break;
+            case 'heal': effect.innerHTML = '✨'; effect.style.fontSize = '50px'; effect.style.animation = 'popText 0.8s ease-out forwards'; break;
+            case 'poison': effect.innerHTML = '☠️'; effect.style.fontSize = '50px'; effect.style.animation = 'popText 0.6s ease-out forwards'; break;
+            case 'guard': effect.innerHTML = '🛡️'; effect.style.fontSize = '60px'; effect.style.animation = 'popText 0.6s ease-out forwards'; break;
+            case 'critical': effect.innerHTML = '⚡️'; effect.style.fontSize = '70px'; effect.style.animation = 'popText 0.5s ease-out forwards'; break;
+            case 'void': effect.innerHTML = '🌌'; effect.style.fontSize = '60px'; effect.style.animation = 'popText 0.8s ease-out forwards'; break;
+            case 'meteor': effect.innerHTML = '☄️'; effect.style.fontSize = '80px'; effect.style.animation = 'popText 0.8s ease-out forwards'; break;
+            case 'darkness': effect.innerHTML = '🌑'; effect.style.fontSize = '100px'; effect.style.animation = 'popText 1s ease-out forwards'; break;
         }
         document.body.appendChild(effect);
         setTimeout(() => effect.remove(), 1000);
@@ -594,30 +556,67 @@
         ], { duration: 400 });
     }
 
-    // --- バトルUI ---
+    // --- エンドレスモード用敵生成（赤・青・緑スライムの3体固定） ---
+    function generateEndlessEnemies(wave) {
+        let fixedIds = [1, 2, 3]; // 緑スライム、赤スライム、青スライム
+        let multiplier = 1 + (wave - 1) * 0.25; // 1Waveごとにステータス25%増加
+
+        let enemies = [];
+        for (let i = 0; i < fixedIds.length; i++) {
+            let baseCard = CARD_DB.find(c => c.id === fixedIds[i]);
+            let hp = Math.floor(baseCard.hp * multiplier);
+            let atk = Math.floor(baseCard.atk * multiplier);
+            enemies.push({
+                ...baseCard,
+                hp: hp,
+                currentHp: hp,
+                atk: atk,
+                uid: 'e_' + Date.now() + '_' + i,
+                isDefending: false,
+                cooldown: 0,
+                voidTurns: 0,
+                stunTurns: 0,
+                hasRevived: false,
+                isDeadProcessed: false
+            });
+        }
+        return enemies;
+    }
+
+    // --- バトル始動 ---
     function startBattle(stageId) {
         if (playerDeck.length !== 3) return alert("デッキを3枚編成してください！");
         changeScreen('screen-battle');
         document.getElementById('btn-battle-end').style.display = 'none';
         document.getElementById('battle-log').innerHTML = "バトル開始！<br>";
 
-        let stageInfo = STAGES[stageId];
         battleState.currentStageId = stageId;
-        battleState.currentStageReward = stageInfo.reward;
+        battleState.isOver = false;
 
-        // stunTurns を初期化に追加
         battleState.player = playerDeck.map((id, index) => ({ 
             ...CARD_DB.find(c => c.id === id), 
             currentHp: CARD_DB.find(c => c.id === id).hp, 
             uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false
         }));
-        battleState.enemy = stageInfo.enemies.map((id, index) => ({ 
-            ...CARD_DB.find(c => c.id === id), 
-            currentHp: CARD_DB.find(c => c.id === id).hp, 
-            uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false
-        }));
+
+        if (stageId === 'endless') {
+            battleState.isEndless = true;
+            battleState.endlessWave = 1;
+            battleState.defeatedCount = 0;
+            battleState.currentStageReward = 0;
+            battleState.enemy = generateEndlessEnemies(1);
+            logMsg("🔥 エンドレスモード開始！倒せる限り戦い続けろ！", "#e74c3c");
+        } else {
+            battleState.isEndless = false;
+            let stageInfo = STAGES[stageId];
+            battleState.currentStageReward = stageInfo.reward;
+            battleState.enemy = stageInfo.enemies.map((id, index) => ({ 
+                ...CARD_DB.find(c => c.id === id), 
+                currentHp: CARD_DB.find(c => c.id === id).hp, 
+                uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false, isDeadProcessed: false
+            }));
+        }
         
-        battleState.isOver = false;
         startCommandPhase();
     }
 
@@ -627,7 +626,6 @@
             let stateClass = fighter.currentHp <= 0 ? "dead" : ((!battleState.isOver && battleState.player[currentCommandIndex]?.uid === fighter.uid) ? "inputting" : "");
             let cdText = fighter.cooldown > 0 ? `<div class="cooldown-label">⏳ 技CT: ${fighter.cooldown}T</div>` : `<div class="cooldown-label" style="color:#2ecc71;">✨ 技OK</div>`;
             
-            // 状態異常表示
             let voidText = fighter.voidTurns > 0 ? `<div style="font-size:10px; color:#9b59b6; font-weight:bold;">🌌 虚無(${fighter.voidTurns}T)</div>` : '';
             let stunText = fighter.stunTurns > 0 ? `<div style="font-size:10px; color:#f1c40f; font-weight:bold;">⚡ スタン</div>` : '';
             
@@ -711,7 +709,6 @@
             if (battleState.isOver) break;
             let actor = cmd.actor; if (actor.currentHp <= 0) continue;
 
-            // --- スタン判定による行動キャンセル ---
             if (actor.stunTurns > 0) {
                 actor.stunTurns--;
                 const actorCard = document.getElementById(`card-${actor.uid}`);
@@ -785,7 +782,10 @@
                     logMsg(`🌌 虚無の蝕み！ ${c.name}は ${voidDmg} のダメージを受けた！ (残り${c.voidTurns}T)`, "#8e44ad");
                 }
             });
-            updateBattleUI(); if (!battleState.isOver) { await sleep(400); startCommandPhase(); }
+            updateBattleUI(); 
+            // 虚無ダメージなどで最後の敵が死んだ場合を判定
+            checkWinLoss();
+            if (!battleState.isOver) { await sleep(400); startCommandPhase(); }
         }
     }
 
@@ -910,8 +910,6 @@
                 }
                 await sleep(500);
                 break;
-                
-            // --- 新規追加: 海水スライム ---
             case 14:
                 shakeScreen();
                 logMsg(`[${actor.name}]の ${actor.skill}！波が敵全体を襲う！`, color);
@@ -923,7 +921,6 @@
                     showFloatingText(t.uid, `-${d}`, "#00ced1");
                     animateHit(t.uid);
                     
-                    // 20%でスタンを付与
                     if (t.currentHp > 0 && Math.random() < 0.20) {
                         if (t.id === 99) {
                             showFloatingText(t.uid, "無効!", "#bdc3c7");
@@ -935,7 +932,6 @@
                     }
                 }
                 await sleep(500);
-                // 特性による回復
                 if (stunCount > 0 && actor.currentHp > 0) {
                     let heal = 7 * stunCount;
                     actor.currentHp = Math.min(actor.hp, actor.currentHp + heal);
@@ -951,15 +947,54 @@
         }
     }
 
+    // --- 敵の死亡チェック＆回復処理 ---
+    function checkEnemyDeaths() {
+        battleState.enemy.forEach(e => {
+            if (e.currentHp <= 0 && !e.isDeadProcessed) {
+                e.isDeadProcessed = true;
+                if (battleState.isEndless) {
+                    battleState.defeatedCount++;
+                    logMsg(`💀 敵を1体撃破！ (通算討伐数: ${battleState.defeatedCount}体)`, "#f1c40f");
+
+                    // 敵を3体倒すたびに味方全体のHPを50回復 (20から増加)
+                    if (battleState.defeatedCount % 3 === 0) {
+                        let healAmount = 50;
+                        logMsg(`✨【ボーナス】敵を3体撃破！ 味方全体のHPが ${healAmount} 回復！`, "#2ecc71");
+                        battleState.player.forEach(p => {
+                            if (p.currentHp > 0) {
+                                p.currentHp = Math.min(p.hp, p.currentHp + healAmount);
+                                showFloatingText(p.uid, `+${healAmount}`, "#2ecc71");
+                                playSkillEffect(p.uid, 'heal');
+                            }
+                        });
+                    }
+                }
+            }
+        });
+    }
+
     function checkWinLoss() {
         if(battleState.isOver) return;
+
+        // 撃破判定と回復処理
+        checkEnemyDeaths();
+
         if (!battleState.enemy.some(e => e.currentHp > 0)) {
+            if (battleState.isEndless) {
+                // エンドレスモード：次のウェーブへ
+                battleState.endlessWave++;
+                logMsg(`<br>⚔️ Wave ${battleState.endlessWave} に突入！敵が現れた！`, "#f1c40f");
+                battleState.enemy = generateEndlessEnemies(battleState.endlessWave);
+                updateBattleUI();
+                return;
+            }
+
+            // 通常モード勝利処理
             playerCoins += battleState.currentStageReward;
             let logRewardMsg = `<br>🎉 勝利しました！！ コインを 🪙<b>${battleState.currentStageReward}</b> 枚獲得！`;
 
             let currentStage = STAGES[battleState.currentStageId];
             if (currentStage && currentStage.isEvent) {
-                // サマーコイン獲得処理
                 playerSummerCoins += 1;
                 logRewardMsg += `<br>🏖️ サマーコインを <b>1</b> 枚獲得！`;
 
@@ -975,9 +1010,19 @@
             }
             saveData(); logMsg(logRewardMsg, "#f1c40f"); endBattle();
         } else if (!battleState.player.some(p => p.currentHp > 0)) {
-            logMsg("<br>💀 敗北しました...", "#e74c3c"); endBattle();
+            if (battleState.isEndless) {
+                // エンドレスモード全滅時の報酬
+                let rewardCoins = battleState.defeatedCount * 30;
+                playerCoins += rewardCoins;
+                saveData();
+                logMsg(`<br>💀 エンドレスモード終了...<br>到達 Wave: <b>${battleState.endlessWave}</b><br>総討伐数: <b>${battleState.defeatedCount} 体</b><br>獲得報酬: 🪙<b>${rewardCoins}</b> 枚`, "#e74c3c");
+            } else {
+                logMsg("<br>💀 敗北しました...", "#e74c3c");
+            }
+            endBattle();
         }
     }
+
     function endBattle() {
         battleState.isOver = true; document.getElementById('command-area').style.display = 'none';
         document.getElementById('btn-battle-end').style.display = 'block'; updateBattleUI();
