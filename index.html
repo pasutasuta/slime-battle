@@ -178,7 +178,7 @@
 
         <div style="display: flex; justify-content: center; gap: 10px; width: 80%; max-width: 400px; margin: 10px auto;">
             <button id="btn-buy-galaxy" onclick="buySlime(9, 20000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #4b0082;">🌌 ギャラクシー<br>(20000🪙)</button>
-            <button id="btn-buy-meteor" onclick="buySlime(10, 17000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #d35400;">☄️ メテオ<br>(17000🪙)</button>
+            <button id="btn-buy-change" onclick="buySlime(15, 17000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #8a2be2;">🎭 変化スライム<br>(17000🪙)</button>
         </div>
 
         <div style="background-color: #e0f7fa; padding: 10px; border-radius: 8px; margin: 15px auto; width: 80%; max-width: 400px; text-align: center; border: 2px solid #00acc1;">
@@ -300,6 +300,7 @@
         { id: 12, name: "闇スライム", hp: 47, atk: 12, skill: "ダークバレット", skillDesc: "ランダムな敵2体にダメージ", trait: "闇の衝動", traitDesc: "毎ターンATK+1", rarity: "SR", color: "#2c3e50", scale: 1.0, imageURL: "", gachaRate: 10 },
         { id: 13, name: "光闇スライム", hp: 50, atk: 5, skill: "カオスサークル", skillDesc: "味方全体HP7回復＆敵全体に虚無", trait: "混沌の再生", traitDesc: "毎ターン自分のHPを5回復", rarity: "UR", color: "linear-gradient(135deg, #f1c40f 50%, #2c3e50 50%)", scale: 1.2, imageURL: "", gachaRate: 0 },
         { id: 14, name: "海水スライム", hp: 45, atk: 12, skill: "スプラッシュ", skillDesc: "全体ダメージ＆20%でスタン", trait: "海の癒し", traitDesc: "スタンするごとにHP7回復", rarity: "EX", color: "#00acc1", scale: 1.1, imageURL: "", gachaRate: 0 },
+        { id: 15, name: "変化スライム", hp: 55, atk: 10, skill: "マックスドレイン", skillDesc: "敵1体の最大体力を20減らす", trait: "生命吸収", traitDesc: "最大体力を減らしたときHP20回復", rarity: "UR", color: "#8a2be2", scale: 1.2, imageURL: "", gachaRate: 0 },
 
         { id: 99, name: "魔王スライム", hp: 800, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
     ];
@@ -360,7 +361,7 @@
 
     function updateShopButtons() {
         const btnGalaxy = document.getElementById('btn-buy-galaxy');
-        const btnMeteor = document.getElementById('btn-buy-meteor');
+        const btnChange = document.getElementById('btn-buy-change');
         const btnSeawater = document.getElementById('btn-buy-seawater');
 
         if (btnGalaxy) {
@@ -370,11 +371,11 @@
                 btnGalaxy.innerHTML = "🌌 ギャラクシー<br>(20000🪙)"; btnGalaxy.disabled = false;
             }
         }
-        if (btnMeteor) {
-            if (playerInventory.includes(10)) {
-                btnMeteor.innerHTML = "☄️ メテオ<br>(購入済み)"; btnMeteor.disabled = true;
+        if (btnChange) {
+            if (playerInventory.includes(15)) {
+                btnChange.innerHTML = "🎭 変化スライム<br>(購入済み)"; btnChange.disabled = true;
             } else {
-                btnMeteor.innerHTML = "☄️ メテオ<br>(17000🪙)"; btnMeteor.disabled = false;
+                btnChange.innerHTML = "🎭 変化スライム<br>(17000🪙)"; btnChange.disabled = false;
             }
         }
         if (btnSeawater) {
@@ -452,6 +453,7 @@
         if (card.id === 10) crownHtml = `<div class="crown">☄️</div>`;
         if (card.id === 13) crownHtml = `<div class="crown">☯️</div>`;
         if (card.id === 14) crownHtml = `<div class="crown" style="font-size:16px;">🌊</div>`;
+        if (card.id === 15) crownHtml = `<div class="crown">🎭</div>`;
         if (card.id === 99) crownHtml = `<div class="crown">💀</div>`;
         
         return `
@@ -501,17 +503,18 @@
         const list = document.getElementById('awaken-list');
         list.innerHTML = "";
         
-        // 今回は試験的に1(緑), 2(赤), 3(青)の3体を対象とする
         const awakenTargets = [
-            { id: 2, desc: "技「ひのこ」が全体攻撃になる！" },
-            { id: 3, desc: "通常攻撃が全体攻撃になる！" },
-            { id: 1, desc: "特性の回復量が 5 → 10 に倍増！" }
+            { id: 2, desc: "技「ひのこ」が全体攻撃になる！", cost: 3000 },
+            { id: 3, desc: "通常攻撃が全体攻撃になる！", cost: 3000 },
+            { id: 1, desc: "特性の回復量が 5 → 10 に倍増！", cost: 3000 },
+            { id: 8, desc: "技の攻撃回数が2倍(10回)になる！", cost: 15000 }
         ];
 
         awakenTargets.forEach(target => {
             let cardData = CARD_DB.find(c => c.id === target.id);
             let hasCard = playerInventory.includes(target.id);
             let isAwakened = playerAwakened.includes(target.id);
+            let targetCost = target.cost || 3000;
             
             let btnHtml = "";
             let cardStyle = "";
@@ -522,7 +525,7 @@
                 btnHtml = `<button disabled style="padding: 6px; font-size: 13px; margin-top: 10px; background-color: #ff3399;">覚醒済み</button>`;
                 cardStyle = "border-color: #ff3399; box-shadow: 0 0 10px rgba(255,51,153,0.5);";
             } else {
-                btnHtml = `<button onclick="awakenSlime(${target.id}, 3000)" style="padding: 6px; font-size: 13px; margin-top: 10px; background-color: #ff3399;">覚醒 (3000🪙)</button>`;
+                btnHtml = `<button onclick="awakenSlime(${target.id}, ${targetCost})" style="padding: 6px; font-size: 13px; margin-top: 10px; background-color: #ff3399;">覚醒 (${targetCost}🪙)</button>`;
             }
 
             list.innerHTML += `
@@ -956,8 +959,9 @@
                 playSkillEffect(target.uid, 'critical');
                 dmg = calculateDamage(actor, target, actor.atk * 2); dealDamage(target, dmg); showFloatingText(target.uid, `CRITICAL -${dmg}`, "#f1c40f"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！！ ${target.name}に ${dmg} の大ダメージ！`, "#f1c40f"); break;
             case 8:
-                logMsg(`[${actor.name}]の ${actor.skill}！ランダム5回連撃！`, color);
-                for (let i = 0; i < 5; i++) {
+                let loopCount = actor.isAwakened ? 10 : 5;
+                logMsg(`[${actor.name}]の ${actor.skill}！ランダム${loopCount}回連撃！`, color);
+                for (let i = 0; i < loopCount; i++) {
                     let aliveTargets = targets.filter(t => t.currentHp > 0);
                     if (aliveTargets.length === 0) break;
                     let randTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
@@ -1056,6 +1060,23 @@
                     logMsg(`✨ [特性] ${actor.name}は敵をスタンさせ、HPが ${heal} 回復！`, "#2ecc71");
                     await sleep(400);
                 }
+                break;
+            case 15:
+                playSkillEffect(target.uid, 'poison');
+                target.hp = Math.max(1, target.hp - 20); // 最小1は残す
+                if (target.currentHp > target.hp) target.currentHp = target.hp; // 現在HPの超過分を調整
+                
+                showFloatingText(target.uid, "最大HP -20", "#9b59b6");
+                await animateHit(target.uid);
+                
+                if (actor.currentHp > 0) {
+                    let healAmt = 20;
+                    actor.currentHp = Math.min(actor.hp, actor.currentHp + healAmt);
+                    showFloatingText(actor.uid, `+${healAmt}`, "#2ecc71");
+                }
+                
+                logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}の最大HPを20減少させ、自身のHPを20回復！`, color);
+                await sleep(500);
                 break;
 
             case 99:
