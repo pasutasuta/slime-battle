@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver8 - 光闇クラフト追加</title>
+<title>スライムカードバトル Ver9 - サマーアップデート追加</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -43,7 +43,7 @@
         background-color: #f1c40f;
         color: #2c3e50;
         font-weight: bold;
-        font-size: 16px;
+        font-size: 15px;
         padding: 8px 15px;
         border-radius: 20px;
         display: inline-block;
@@ -172,13 +172,20 @@
     <div id="screen-home" class="screen active">
         <h1>スライムカードバトル</h1>
         <div class="center-container">
-            <div class="coin-header">🪙 所持コイン: <span class="coin-val">0</span> 枚</div>
+            <!-- サマーコインの表示を追加 -->
+            <div class="coin-header">🪙 <span class="coin-val">0</span> 枚 ｜ 🏖️ <span class="summer-coin-val">0</span> 枚</div>
         </div>
 
-        <!-- 左右配置のショップボタン -->
+        <!-- 既存のショップボタン -->
         <div style="display: flex; justify-content: center; gap: 10px; width: 80%; max-width: 400px; margin: 10px auto;">
             <button id="btn-buy-galaxy" onclick="buySlime(9, 20000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #4b0082;">🌌 ギャラクシー<br>(20000🪙)</button>
             <button id="btn-buy-meteor" onclick="buySlime(10, 17000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #d35400;">☄️ メテオ<br>(17000🪙)</button>
+        </div>
+
+        <!-- サマーショップを追加 -->
+        <div style="background-color: #e0f7fa; padding: 10px; border-radius: 8px; margin: 15px auto; width: 80%; max-width: 400px; text-align: center; border: 2px solid #00acc1;">
+            <h3 style="margin: 0 0 10px 0; color: #00838f; font-size: 15px;">🏖️ サマーショップ</h3>
+            <button id="btn-buy-seawater" onclick="buySummerSlime(14, 35)" style="margin: 0 auto; padding: 10px 5px; font-size: 13px; background-color: #00acc1; width: 90%;">🌊 海水スライム<br>(35🏖️)</button>
         </div>
 
         <button onclick="changeScreen('screen-stage')">⚔️ バトルに出発</button>
@@ -222,7 +229,7 @@
     <div id="screen-gacha" class="screen">
         <h2>スライムガチャ</h2>
         <div class="center-container">
-            <div class="coin-header">🪙 所持コイン: <span class="coin-val">0</span> 枚</div>
+            <div class="coin-header">🪙 <span class="coin-val">0</span> 枚 ｜ 🏖️ <span class="summer-coin-val">0</span> 枚</div>
         </div>
         <p style="text-align:center; margin-bottom: 5px;">1回: <b>100 コイン</b></p>
         <button id="btn-draw-gacha" onclick="drawGacha()" style="background-color: #f1c40f; color: #333;">ガチャを回す (100枚)</button>
@@ -236,7 +243,7 @@
         <button onclick="startBattle(1)">ステージ1: 森の入り口 (報奨 100🪙)</button>
         <button onclick="startBattle(2)">ステージ2: 火山のふもと (報奨 200🪙)</button>
         <button onclick="startBattle(3)">ステージ3: スライム城 (報奨 500🪙)</button>
-        <button onclick="startBattle(4)" style="background-color: #e67e22; border: 2px solid #f1c40f;">🌺 イベント: 南のビーチ (1%で限定キャラ! 300🪙)</button>
+        <button onclick="startBattle(4)" style="background-color: #e67e22; border: 2px solid #f1c40f;">🌺 イベント: 南のビーチ (報奨 300🪙+1🏖️)</button>
         <button onclick="startBattle(5)" style="background-color: #8e44ad; border: 2px solid #9b59b6; margin-top:15px; padding: 20px;">💀 新ステージ: 魔王の玉座<br>(ボスバトル / 報奨 1500🪙)</button>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
@@ -274,10 +281,12 @@
         { id: 9, name: "ギャラクシースライム", hp: 70, atk: 24, skill: "ボイドホール", skillDesc: "敵1体を虚無状態(毎Tダメ)にする", trait: "虚無の侵食", traitDesc: "虚無状態の敵に与えるダメ1.5倍", rarity: "UR", color: "#4b0082", scale: 1.3, imageURL: "", gachaRate: 0 },
         { id: 10, name: "メテオスライム", hp: 85, atk: 22, skill: "メテオフォール", skillDesc: "敵全体に強力なダメージ", trait: "不滅の流星", traitDesc: "HPが0になると一度だけHP1で復活", rarity: "UR", color: "#d35400", scale: 1.3, imageURL: "", gachaRate: 0 },
         
-        // 新規追加スライム
         { id: 11, name: "光スライム", hp: 50, atk: 3, skill: "ホーリーヒール", skillDesc: "味方全体のHPを10回復", trait: "光の加護", traitDesc: "毎ターン自分のHPを5回復", rarity: "SR", color: "#f1c40f", scale: 1.0, imageURL: "", gachaRate: 10 },
         { id: 12, name: "闇スライム", hp: 47, atk: 12, skill: "ダークバレット", skillDesc: "ランダムな敵2体にダメージ", trait: "闇の衝動", traitDesc: "毎ターンATK+1", rarity: "SR", color: "#2c3e50", scale: 1.0, imageURL: "", gachaRate: 10 },
         { id: 13, name: "光闇スライム", hp: 50, atk: 5, skill: "カオスサークル", skillDesc: "味方全体HP7回復＆敵全体に虚無", trait: "混沌の再生", traitDesc: "毎ターン自分のHPを5回復", rarity: "UR", color: "linear-gradient(135deg, #f1c40f 50%, #2c3e50 50%)", scale: 1.2, imageURL: "", gachaRate: 0 },
+        
+        // 新規追加キャラクター
+        { id: 14, name: "海水スライム", hp: 45, atk: 12, skill: "スプラッシュ", skillDesc: "全体ダメージ＆20%でスタン", trait: "海の癒し", traitDesc: "スタンするごとにHP7回復", rarity: "EX", color: "#00acc1", scale: 1.1, imageURL: "", gachaRate: 0 },
 
         // ボス専用キャラクター
         { id: 99, name: "魔王スライム", hp: 800, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
@@ -287,17 +296,23 @@
         1: { enemies: [1, 1, 3], reward: 100, isEvent: false },
         2: { enemies: [2, 2, 4], reward: 200, isEvent: false },
         3: { enemies: [6, 5, 7], reward: 500, isEvent: false },
-        4: { enemies: [8, 3, 8], reward: 300, isEvent: true },
-        5: { enemies: [99], reward: 1500, isEvent: false } // 新規ボスステージ
+        4: { enemies: [8, 3, 8], reward: 300, isEvent: true }, // イベントステージ（ここでサマーコインゲット）
+        5: { enemies: [99], reward: 1500, isEvent: false }
     };
 
     const SAVE_KEY = "slime_card_game_data";
     let playerInventory = [1, 2, 3];
     let playerDeck = [1, 2, 3];
     let playerCoins = 200;
+    let playerSummerCoins = 0; // 追加
 
     function saveData() {
-        localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: playerInventory, deck: playerDeck, coins: playerCoins }));
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ 
+            inventory: playerInventory, 
+            deck: playerDeck, 
+            coins: playerCoins,
+            summerCoins: playerSummerCoins // 保存処理追加
+        }));
         updateCoinDisplay();
         updateShopButtons();
     }
@@ -309,6 +324,7 @@
                 playerInventory = data.inventory || [1, 2, 3];
                 playerDeck = data.deck || [1, 2, 3];
                 playerCoins = (data.coins !== undefined) ? data.coins : 200;
+                playerSummerCoins = (data.summerCoins !== undefined) ? data.summerCoins : 0; // 読み込み処理追加
             } catch(e) {}
         }
         updateCoinDisplay();
@@ -321,12 +337,15 @@
     }
     function updateCoinDisplay() {
         document.querySelectorAll('.coin-val').forEach(el => el.innerText = playerCoins);
+        document.querySelectorAll('.summer-coin-val').forEach(el => el.innerText = playerSummerCoins); // サマーコイン表示追加
     }
 
     // ショップボタンの状態
     function updateShopButtons() {
         const btnGalaxy = document.getElementById('btn-buy-galaxy');
         const btnMeteor = document.getElementById('btn-buy-meteor');
+        const btnSeawater = document.getElementById('btn-buy-seawater');
+
         if (btnGalaxy) {
             if (playerInventory.includes(9)) {
                 btnGalaxy.innerHTML = "🌌 ギャラクシー<br>(購入済み)"; btnGalaxy.disabled = true;
@@ -341,12 +360,28 @@
                 btnMeteor.innerHTML = "☄️ メテオ<br>(17000🪙)"; btnMeteor.disabled = false;
             }
         }
+        if (btnSeawater) {
+            if (playerInventory.includes(14)) {
+                btnSeawater.innerHTML = "🌊 海水スライム<br>(購入済み)"; btnSeawater.disabled = true;
+            } else {
+                btnSeawater.innerHTML = "🌊 海水スライム<br>(35🏖️)"; btnSeawater.disabled = false;
+            }
+        }
     }
 
     function buySlime(cardId, price) {
         if (playerInventory.includes(cardId)) return alert("すでに所持しています！");
         if (playerCoins < price) return alert("コインが足りません！");
         playerCoins -= price; playerInventory.push(cardId); saveData();
+        let card = CARD_DB.find(c => c.id === cardId);
+        alert(`🎉 ${card.name} を購入しました！`);
+    }
+
+    // サマーコイン用購入処理追加
+    function buySummerSlime(cardId, price) {
+        if (playerInventory.includes(cardId)) return alert("すでに所持しています！");
+        if (playerSummerCoins < price) return alert("サマーコインが足りません！");
+        playerSummerCoins -= price; playerInventory.push(cardId); saveData();
         let card = CARD_DB.find(c => c.id === cardId);
         alert(`🎉 ${card.name} を購入しました！`);
     }
@@ -360,12 +395,8 @@
             return alert("すでに「光闇スライム」を所持しています！");
         }
         
-        // 所持品から光(11)と闇(12)を削除
         playerInventory = playerInventory.filter(id => id !== 11 && id !== 12);
-        // デッキに編成されていた場合、デッキからも外す
         playerDeck = playerDeck.filter(id => id !== 11 && id !== 12);
-        
-        // 光闇(13)を付与
         playerInventory.push(13);
         saveData();
         
@@ -395,6 +426,7 @@
         if (card.id === 9) crownHtml = `<div class="crown">🌌</div>`;
         if (card.id === 10) crownHtml = `<div class="crown">☄️</div>`;
         if (card.id === 13) crownHtml = `<div class="crown">☯️</div>`;
+        if (card.id === 14) crownHtml = `<div class="crown" style="font-size:16px;">🌊</div>`;
         if (card.id === 99) crownHtml = `<div class="crown">💀</div>`;
         
         return `
@@ -408,7 +440,6 @@
     function createCardHTML(card, isSelected = false, readOnly = false) {
         let selectedClass = isSelected ? "selected" : "";
         let onclickAttr = readOnly ? "" : `onclick="toggleDeck(${card.id})"`;
-        // 図鑑などでボスは大きすぎるので少し抑える
         let dispScale = card.id === 99 ? 1.0 : card.scale;
         return `
             <div class="card ${selectedClass}" data-id="${card.id}" ${onclickAttr}>
@@ -574,15 +605,16 @@
         battleState.currentStageId = stageId;
         battleState.currentStageReward = stageInfo.reward;
 
+        // stunTurns を初期化に追加
         battleState.player = playerDeck.map((id, index) => ({ 
             ...CARD_DB.find(c => c.id === id), 
             currentHp: CARD_DB.find(c => c.id === id).hp, 
-            uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, hasRevived: false
+            uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false
         }));
         battleState.enemy = stageInfo.enemies.map((id, index) => ({ 
             ...CARD_DB.find(c => c.id === id), 
             currentHp: CARD_DB.find(c => c.id === id).hp, 
-            uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, hasRevived: false
+            uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false
         }));
         
         battleState.isOver = false;
@@ -594,11 +626,13 @@
             let hpPercent = Math.max(0, (fighter.currentHp / fighter.hp) * 100);
             let stateClass = fighter.currentHp <= 0 ? "dead" : ((!battleState.isOver && battleState.player[currentCommandIndex]?.uid === fighter.uid) ? "inputting" : "");
             let cdText = fighter.cooldown > 0 ? `<div class="cooldown-label">⏳ 技CT: ${fighter.cooldown}T</div>` : `<div class="cooldown-label" style="color:#2ecc71;">✨ 技OK</div>`;
-            let voidText = fighter.voidTurns > 0 ? `<div style="font-size:10px; color:#9b59b6; font-weight:bold;">🌌 虚無(${fighter.voidTurns}T)</div>` : '';
             
-            // ボスの場合、表示枠を少し広げる
+            // 状態異常表示
+            let voidText = fighter.voidTurns > 0 ? `<div style="font-size:10px; color:#9b59b6; font-weight:bold;">🌌 虚無(${fighter.voidTurns}T)</div>` : '';
+            let stunText = fighter.stunTurns > 0 ? `<div style="font-size:10px; color:#f1c40f; font-weight:bold;">⚡ スタン</div>` : '';
+            
             let extraStyle = fighter.id === 99 ? 'border: 3px solid #e74c3c; box-shadow: 0 0 10px #e74c3c;' : '';
-            let imageScale = fighter.id === 99 ? 1.0 : 0.8; // CSSスライム自体のスケールを使用
+            let imageScale = fighter.id === 99 ? 1.0 : 0.8; 
 
             return `
                 <div class="battle-card ${stateClass}" id="card-${fighter.uid}" style="${extraStyle}">
@@ -609,6 +643,7 @@
                     <div class="hp-bar-bg"><div class="hp-bar-fill" style="width: ${hpPercent}%;"></div></div>
                     <div>HP: ${fighter.currentHp}/${fighter.hp} ⚔️${fighter.atk}</div>
                     ${voidText}
+                    ${stunText}
                     ${cdText}
                 </div>
             `;
@@ -675,6 +710,20 @@
         for (let cmd of commandQueue) {
             if (battleState.isOver) break;
             let actor = cmd.actor; if (actor.currentHp <= 0) continue;
+
+            // --- スタン判定による行動キャンセル ---
+            if (actor.stunTurns > 0) {
+                actor.stunTurns--;
+                const actorCard = document.getElementById(`card-${actor.uid}`);
+                if (actorCard) actorCard.classList.add('active-turn');
+                logMsg(`⚡ ${actor.name} はスタンして動けない！`, "#f1c40f");
+                showFloatingText(actor.uid, "STUN", "#f1c40f");
+                await sleep(500);
+                if (actorCard) actorCard.classList.remove('active-turn');
+                updateBattleUI();
+                continue;
+            }
+
             actor.isDefending = false;
             let targets = cmd.team === 'player' ? battleState.enemy.filter(e=>e.currentHp>0) : battleState.player.filter(p=>p.currentHp>0);
             let allies = cmd.team === 'player' ? battleState.player.filter(p=>p.currentHp>0) : battleState.enemy.filter(e=>e.currentHp>0);
@@ -711,26 +760,23 @@
             [...battleState.player, ...battleState.enemy].forEach(c => {
                 if (c.cooldown > 0) c.cooldown--;
                 
-                // 特性: 毎ターンHP5回復 (緑スライム, 光スライム, 光闇スライム)
                 if (c.currentHp > 0 && (c.id === 1 || c.id === 11 || c.id === 13)) {
                     c.currentHp = Math.min(c.hp, c.currentHp + 5);
                     showFloatingText(c.uid, "+5", "#2ecc71"); 
                     logMsg(`✨ [特性] ${c.name}の回復効果！HPが5回復！`, "#2ecc71");
                 }
                 
-                // 特性: 毎ターンATK+1 (闇スライム)
                 if (c.currentHp > 0 && c.id === 12) {
                     c.atk += 1;
                     showFloatingText(c.uid, "ATK+1", "#e74c3c"); 
                     logMsg(`🔥 [特性] ${c.name}の闇の衝動！攻撃力が上がった！`, "#e74c3c");
                 }
 
-                // ボス自動回復
                 if (c.currentHp > 0 && c.id === 99) {
                     c.currentHp = Math.min(c.hp, c.currentHp + 15);
                     showFloatingText(c.uid, "+15", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の魔王の威圧！HPが15回復！`, "#2ecc71");
                 }
-                // 虚無ダメージ
+                
                 if (c.currentHp > 0 && c.voidTurns > 0) {
                     let voidDmg = 12;
                     dealDamage(c, voidDmg);
@@ -818,8 +864,6 @@
             case 10:
                 shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！隕石が降り注ぐ！`, "#d35400");
                 for (let t of targets) { playSkillEffect(t.uid, 'meteor'); let d = calculateDamage(actor, t, actor.atk * 1.2); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e67e22"); animateHit(t.uid); } await sleep(500); break;
-
-            // --- 新規: 光スライム ---
             case 11:
                 logMsg(`[${actor.name}]の ${actor.skill}！神聖な光が味方を癒す！`, color);
                 for (let a of allies) {
@@ -830,8 +874,6 @@
                 }
                 await sleep(500);
                 break;
-
-            // --- 新規: 闇スライム ---
             case 12:
                 logMsg(`[${actor.name}]の ${actor.skill}！ランダムな敵2体にダメージ！`, color);
                 for (let i = 0; i < 2; i++) {
@@ -847,12 +889,9 @@
                     await sleep(300);
                 }
                 break;
-                
-            // --- 新規: 光闇スライム ---
             case 13:
                 shakeScreen();
                 logMsg(`[${actor.name}]の ${actor.skill}！混沌の力で味方を癒し、敵を虚無に包む！`, color);
-                // 味方回復
                 for (let a of allies) {
                     if (a.currentHp <= 0) continue;
                     playSkillEffect(a.uid, 'heal');
@@ -860,7 +899,6 @@
                     showFloatingText(a.uid, `+7`, "#2ecc71");
                 }
                 await sleep(400);
-                // 敵全体虚無
                 for (let t of targets) {
                     playSkillEffect(t.uid, 'void');
                     if (t.id === 99) {
@@ -871,6 +909,40 @@
                     }
                 }
                 await sleep(500);
+                break;
+                
+            // --- 新規追加: 海水スライム ---
+            case 14:
+                shakeScreen();
+                logMsg(`[${actor.name}]の ${actor.skill}！波が敵全体を襲う！`, color);
+                let stunCount = 0;
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'water');
+                    let d = calculateDamage(actor, t, actor.atk * 0.9);
+                    dealDamage(t, d);
+                    showFloatingText(t.uid, `-${d}`, "#00ced1");
+                    animateHit(t.uid);
+                    
+                    // 20%でスタンを付与
+                    if (t.currentHp > 0 && Math.random() < 0.20) {
+                        if (t.id === 99) {
+                            showFloatingText(t.uid, "無効!", "#bdc3c7");
+                        } else {
+                            t.stunTurns = 1;
+                            showFloatingText(t.uid, "スタン!", "#f1c40f");
+                            stunCount++;
+                        }
+                    }
+                }
+                await sleep(500);
+                // 特性による回復
+                if (stunCount > 0 && actor.currentHp > 0) {
+                    let heal = 7 * stunCount;
+                    actor.currentHp = Math.min(actor.hp, actor.currentHp + heal);
+                    showFloatingText(actor.uid, `+${heal}`, "#2ecc71");
+                    logMsg(`✨ [特性] ${actor.name}は敵をスタンさせ、HPが ${heal} 回復！`, "#2ecc71");
+                    await sleep(400);
+                }
                 break;
 
             case 99:
@@ -887,6 +959,10 @@
 
             let currentStage = STAGES[battleState.currentStageId];
             if (currentStage && currentStage.isEvent) {
+                // サマーコイン獲得処理
+                playerSummerCoins += 1;
+                logRewardMsg += `<br>🏖️ サマーコインを <b>1</b> 枚獲得！`;
+
                 if (Math.random() < 0.01) {
                     let dropCard = CARD_DB.find(c => c.id === 8);
                     if (!playerInventory.includes(dropCard.id)) {
