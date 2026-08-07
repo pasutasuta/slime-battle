@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver9 - サマーアップデート＆エンドレス追加</title>
+<title>スライムカードバトル Ver10 - 覚醒アップデート</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -146,6 +146,7 @@
     .hp-bar-bg { background: #e74c3c; height: 10px; border-radius: 5px; margin: 5px 0; overflow: hidden; }
     .hp-bar-fill { background: #2ecc71; height: 100%; width: 100%; transition: width 0.3s; }
     .cooldown-label { font-size: 10px; color: #8e44ad; font-weight: bold; margin-top: 2px; }
+    .awaken-label { position: absolute; top: 2px; right: 4px; font-size: 10px; color: #ff3399; font-weight: bold; text-shadow: 0 0 2px #fff; }
 
     #battle-log { background: #34495e; color: #ecf0f1; height: 140px; overflow-y: auto; padding: 10px; border-radius: 8px; font-size: 13px; line-height: 1.6; margin-bottom: 120px; }
 
@@ -189,6 +190,7 @@
         <button onclick="initDeckScreen()">📋 デッキ編成</button>
         <button onclick="changeScreen('screen-gacha')">💎 ガチャを引く</button>
         <button onclick="changeScreen('screen-craft')" style="background-color: #f39c12; border: 2px solid #e67e22;">🔨 合成 (クラフト)</button>
+        <button onclick="initAwakenScreen()" style="background-color: #ff3399; border: 2px solid #c71585;">✨ スライム覚醒</button>
         <button onclick="initBookScreen()" style="background-color: #8e44ad;">📖 スライム図鑑</button>
         <button onclick="resetData()" style="background-color: #e74c3c; width: 40%; font-size: 12px; padding: 8px; margin-top: 30px;">⚠️ データ初期化</button>
     </div>
@@ -197,6 +199,20 @@
         <h2>デッキ編成</h2>
         <p style="text-align:center;">タップして3枚選んでください<br>現在選択中: <span id="deck-count">0</span>/3</p>
         <div id="inventory-list" class="card-container"></div>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+    
+    <!-- 覚醒画面 -->
+    <div id="screen-awaken" class="screen">
+        <h2>スライム覚醒</h2>
+        <div class="center-container">
+            <div class="coin-header">🪙 <span class="coin-val">0</span> 枚</div>
+        </div>
+        <p style="text-align:center; font-size:13px; margin-bottom: 20px;">
+            コインを消費してスライムの真の力を解放します！<br>
+            ※一度覚醒するとバトルで自動的に能力が発動します。
+        </p>
+        <div id="awaken-list" class="card-container"></div>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
@@ -301,17 +317,20 @@
     let playerDeck = [1, 2, 3];
     let playerCoins = 200;
     let playerSummerCoins = 0;
+    let playerAwakened = []; // 覚醒済みスライムIDを保持する配列
 
     function saveData() {
         localStorage.setItem(SAVE_KEY, JSON.stringify({ 
             inventory: playerInventory, 
             deck: playerDeck, 
             coins: playerCoins,
-            summerCoins: playerSummerCoins
+            summerCoins: playerSummerCoins,
+            awakened: playerAwakened
         }));
         updateCoinDisplay();
         updateShopButtons();
     }
+    
     function loadData() {
         const saved = localStorage.getItem(SAVE_KEY);
         if (saved) {
@@ -321,16 +340,19 @@
                 playerDeck = data.deck || [1, 2, 3];
                 playerCoins = (data.coins !== undefined) ? data.coins : 200;
                 playerSummerCoins = (data.summerCoins !== undefined) ? data.summerCoins : 0;
+                playerAwakened = data.awakened || [];
             } catch(e) {}
         }
         updateCoinDisplay();
         updateShopButtons();
     }
+    
     function resetData() {
         if (confirm("本当にデータを初期化しますか？")) {
             localStorage.removeItem(SAVE_KEY); location.reload();
         }
     }
+    
     function updateCoinDisplay() {
         document.querySelectorAll('.coin-val').forEach(el => el.innerText = playerCoins);
         document.querySelectorAll('.summer-coin-val').forEach(el => el.innerText = playerSummerCoins);
@@ -444,9 +466,11 @@
         let selectedClass = isSelected ? "selected" : "";
         let onclickAttr = readOnly ? "" : `onclick="toggleDeck(${card.id})"`;
         let dispScale = card.id === 99 ? 1.0 : card.scale;
+        let awakenHtml = playerAwakened.includes(card.id) ? '<div class="awaken-label">✨覚醒</div>' : '';
         return `
             <div class="card ${selectedClass}" data-id="${card.id}" ${onclickAttr}>
                 <div class="rarity">${card.rarity}</div>
+                ${awakenHtml}
                 <div class="name">${card.name}</div>
                 <div class="illustration-box" style="transform: scale(${dispScale});">
                     ${renderIllustration(card)}
@@ -469,6 +493,61 @@
             list.innerHTML += createCardHTML(cardData, playerDeck.includes(cardId), false);
         });
         document.getElementById('deck-count').innerText = playerDeck.length;
+    }
+
+    // --- 覚醒画面の初期化処理 ---
+    function initAwakenScreen() {
+        changeScreen('screen-awaken');
+        const list = document.getElementById('awaken-list');
+        list.innerHTML = "";
+        
+        // 今回は試験的に1(緑), 2(赤), 3(青)の3体を対象とする
+        const awakenTargets = [
+            { id: 2, desc: "技「ひのこ」が全体攻撃になる！" },
+            { id: 3, desc: "通常攻撃が全体攻撃になる！" },
+            { id: 1, desc: "特性の回復量が 5 → 10 に倍増！" }
+        ];
+
+        awakenTargets.forEach(target => {
+            let cardData = CARD_DB.find(c => c.id === target.id);
+            let hasCard = playerInventory.includes(target.id);
+            let isAwakened = playerAwakened.includes(target.id);
+            
+            let btnHtml = "";
+            let cardStyle = "";
+            if (!hasCard) {
+                btnHtml = `<button disabled style="padding: 6px; font-size: 13px; margin-top: 10px;">未所持</button>`;
+                cardStyle = "opacity: 0.6; filter: grayscale(50%);";
+            } else if (isAwakened) {
+                btnHtml = `<button disabled style="padding: 6px; font-size: 13px; margin-top: 10px; background-color: #ff3399;">覚醒済み</button>`;
+                cardStyle = "border-color: #ff3399; box-shadow: 0 0 10px rgba(255,51,153,0.5);";
+            } else {
+                btnHtml = `<button onclick="awakenSlime(${target.id}, 3000)" style="padding: 6px; font-size: 13px; margin-top: 10px; background-color: #ff3399;">覚醒 (3000🪙)</button>`;
+            }
+
+            list.innerHTML += `
+                <div class="card" style="${cardStyle} cursor: default;">
+                    <div class="rarity">${cardData.rarity}</div>
+                    <div class="name">${cardData.name}</div>
+                    <div class="illustration-box" style="transform: scale(${cardData.scale});">
+                        ${renderIllustration(cardData)}
+                    </div>
+                    <div class="title-label" style="background:#ffccff; color:#990099;">✨ 覚醒能力</div>
+                    <div class="desc" style="color:#990099; font-weight:bold; font-size: 11px;">${target.desc}</div>
+                    ${btnHtml}
+                </div>
+            `;
+        });
+    }
+
+    // 覚醒処理の実行関数
+    function awakenSlime(cardId, cost) {
+        if (playerCoins < cost) return alert("コインが足りません！");
+        playerCoins -= cost;
+        playerAwakened.push(cardId);
+        saveData();
+        alert("🎉 覚醒に成功しました！能力が強化されました！");
+        initAwakenScreen();
     }
 
     function toggleDeck(cardId) {
@@ -556,10 +635,9 @@
         ], { duration: 400 });
     }
 
-    // --- エンドレスモード用敵生成（赤・青・緑スライムの3体固定） ---
     function generateEndlessEnemies(wave) {
-        let fixedIds = [1, 2, 3]; // 緑スライム、赤スライム、青スライム
-        let multiplier = 1 + (wave - 1) * 0.25; // 1Waveごとにステータス25%増加
+        let fixedIds = [1, 2, 3];
+        let multiplier = 1 + (wave - 1) * 0.25;
 
         let enemies = [];
         for (let i = 0; i < fixedIds.length; i++) {
@@ -577,7 +655,8 @@
                 voidTurns: 0,
                 stunTurns: 0,
                 hasRevived: false,
-                isDeadProcessed: false
+                isDeadProcessed: false,
+                isAwakened: false // 敵は覚醒状態なしとする
             });
         }
         return enemies;
@@ -596,7 +675,8 @@
         battleState.player = playerDeck.map((id, index) => ({ 
             ...CARD_DB.find(c => c.id === id), 
             currentHp: CARD_DB.find(c => c.id === id).hp, 
-            uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false
+            uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false,
+            isAwakened: playerAwakened.includes(id) // 覚醒フラグを付与
         }));
 
         if (stageId === 'endless') {
@@ -613,7 +693,8 @@
             battleState.enemy = stageInfo.enemies.map((id, index) => ({ 
                 ...CARD_DB.find(c => c.id === id), 
                 currentHp: CARD_DB.find(c => c.id === id).hp, 
-                uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false, isDeadProcessed: false
+                uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false, isDeadProcessed: false,
+                isAwakened: false // 敵は覚醒なし
             }));
         }
         
@@ -631,10 +712,12 @@
             
             let extraStyle = fighter.id === 99 ? 'border: 3px solid #e74c3c; box-shadow: 0 0 10px #e74c3c;' : '';
             let imageScale = fighter.id === 99 ? 1.0 : 0.8; 
+            
+            let awakenMarker = fighter.isAwakened ? `<span style="color:#ff3399; font-size: 14px;">✨</span>` : '';
 
             return `
                 <div class="battle-card ${stateClass}" id="card-${fighter.uid}" style="${extraStyle}">
-                    <div style="font-weight:bold;">${fighter.name}</div>
+                    <div style="font-weight:bold;">${fighter.name} ${awakenMarker}</div>
                     <div class="illustration-box" style="transform: scale(${imageScale}); height: 45px; margin: 10px 0;">
                         ${renderIllustration(fighter)}
                     </div>
@@ -733,17 +816,31 @@
             await sleep(300); await animateAttack(actor.uid, cmd.team);
 
             if (cmd.type === 'attack') {
-                let dmg = calculateDamage(actor, target, actor.atk);
-                if (actor.id === 5) dmg += 5;
-                dealDamage(target, dmg);
-                playSkillEffect(target.uid, 'slash');
-                showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid);
-                logMsg(`[${actor.name}]の通常攻撃！ ${target.name}に ${dmg} のダメージ！`, color);
+                // --- 青スライムの覚醒能力: 通常攻撃が全体攻撃 ---
+                if (actor.id === 3 && actor.isAwakened) {
+                    shakeScreen();
+                    logMsg(`✨ [${actor.name}]の覚醒通常攻撃！全体に攻撃！`, color);
+                    for (let t of targets) {
+                        let dmg = calculateDamage(actor, t, actor.atk);
+                        dealDamage(t, dmg);
+                        playSkillEffect(t.uid, 'slash');
+                        showFloatingText(t.uid, `-${dmg}`, "#e74c3c");
+                        animateHit(t.uid);
+                    }
+                    await sleep(400);
+                } else {
+                    let dmg = calculateDamage(actor, target, actor.atk);
+                    if (actor.id === 5) dmg += 5;
+                    dealDamage(target, dmg);
+                    playSkillEffect(target.uid, 'slash');
+                    showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid);
+                    logMsg(`[${actor.name}]の通常攻撃！ ${target.name}に ${dmg} のダメージ！`, color);
 
-                if (actor.id === 8 && dmg > 0 && actor.currentHp > 0) {
-                    actor.currentHp = Math.min(actor.hp, actor.currentHp + 2);
-                    showFloatingText(actor.uid, "+2", "#2ecc71");
-                    logMsg(`✨ [特性] ${actor.name}のHPが2回復！`, "#2ecc71");
+                    if (actor.id === 8 && dmg > 0 && actor.currentHp > 0) {
+                        actor.currentHp = Math.min(actor.hp, actor.currentHp + 2);
+                        showFloatingText(actor.uid, "+2", "#2ecc71");
+                        logMsg(`✨ [特性] ${actor.name}のHPが2回復！`, "#2ecc71");
+                    }
                 }
             } else {
                 actor.cooldown = 3; await processSkillAsync(actor, target, targets, allies, color);
@@ -758,9 +855,13 @@
                 if (c.cooldown > 0) c.cooldown--;
                 
                 if (c.currentHp > 0 && (c.id === 1 || c.id === 11 || c.id === 13)) {
-                    c.currentHp = Math.min(c.hp, c.currentHp + 5);
-                    showFloatingText(c.uid, "+5", "#2ecc71"); 
-                    logMsg(`✨ [特性] ${c.name}の回復効果！HPが5回復！`, "#2ecc71");
+                    // --- 緑スライムの覚醒能力: 特性の回復量が2倍(10) ---
+                    let healAmount = 5;
+                    if (c.id === 1 && c.isAwakened) healAmount = 10;
+                    
+                    c.currentHp = Math.min(c.hp, c.currentHp + healAmount);
+                    showFloatingText(c.uid, `+${healAmount}`, "#2ecc71"); 
+                    logMsg(`✨ [特性] ${c.name}の回復効果！HPが ${healAmount} 回復！`, "#2ecc71");
                 }
                 
                 if (c.currentHp > 0 && c.id === 12) {
@@ -783,7 +884,6 @@
                 }
             });
             updateBattleUI(); 
-            // 虚無ダメージなどで最後の敵が死んだ場合を判定
             checkWinLoss();
             if (!battleState.isOver) { await sleep(400); startCommandPhase(); }
         }
@@ -819,8 +919,25 @@
                 playSkillEffect(target.uid, 'slash');
                 dmg = calculateDamage(actor, target, actor.atk * 1.3); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
             case 2: 
-                playSkillEffect(target.uid, 'fire');
-                dmg = calculateDamage(actor, target, actor.atk * 1.5); dealDamage(target, dmg); actor.currentHp = Math.max(0, actor.currentHp - 3); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); showFloatingText(actor.uid, `-3`, "#ff7979"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！(反動3)`, color); break;
+                // --- 赤スライムの覚醒能力: 技が全体攻撃 ---
+                if (actor.isAwakened) {
+                    shakeScreen();
+                    logMsg(`✨ [${actor.name}]の ${actor.skill}！覚醒の力で全体攻撃！(反動3)`, color);
+                    for (let t of targets) {
+                        playSkillEffect(t.uid, 'fire');
+                        let d = calculateDamage(actor, t, actor.atk * 1.5);
+                        dealDamage(t, d);
+                        showFloatingText(t.uid, `-${d}`, "#e74c3c");
+                        animateHit(t.uid);
+                    }
+                    actor.currentHp = Math.max(0, actor.currentHp - 3);
+                    showFloatingText(actor.uid, `-3`, "#ff7979");
+                    await sleep(500);
+                } else {
+                    playSkillEffect(target.uid, 'fire');
+                    dmg = calculateDamage(actor, target, actor.atk * 1.5); dealDamage(target, dmg); actor.currentHp = Math.max(0, actor.currentHp - 3); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); showFloatingText(actor.uid, `-3`, "#ff7979"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！(反動3)`, color); 
+                }
+                break;
             case 3: 
                 let lowest = allies.sort((a,b) => (a.currentHp/a.hp) - (b.currentHp/b.hp))[0]; 
                 playSkillEffect(lowest.uid, 'heal');
@@ -947,7 +1064,6 @@
         }
     }
 
-    // --- 敵の死亡チェック＆回復処理 ---
     function checkEnemyDeaths() {
         battleState.enemy.forEach(e => {
             if (e.currentHp <= 0 && !e.isDeadProcessed) {
@@ -956,7 +1072,6 @@
                     battleState.defeatedCount++;
                     logMsg(`💀 敵を1体撃破！ (通算討伐数: ${battleState.defeatedCount}体)`, "#f1c40f");
 
-                    // 敵を3体倒すたびに味方全体のHPを50回復 (20から増加)
                     if (battleState.defeatedCount % 3 === 0) {
                         let healAmount = 50;
                         logMsg(`✨【ボーナス】敵を3体撃破！ 味方全体のHPが ${healAmount} 回復！`, "#2ecc71");
@@ -976,12 +1091,10 @@
     function checkWinLoss() {
         if(battleState.isOver) return;
 
-        // 撃破判定と回復処理
         checkEnemyDeaths();
 
         if (!battleState.enemy.some(e => e.currentHp > 0)) {
             if (battleState.isEndless) {
-                // エンドレスモード：次のウェーブへ
                 battleState.endlessWave++;
                 logMsg(`<br>⚔️ Wave ${battleState.endlessWave} に突入！敵が現れた！`, "#f1c40f");
                 battleState.enemy = generateEndlessEnemies(battleState.endlessWave);
@@ -989,7 +1102,6 @@
                 return;
             }
 
-            // 通常モード勝利処理
             playerCoins += battleState.currentStageReward;
             let logRewardMsg = `<br>🎉 勝利しました！！ コインを 🪙<b>${battleState.currentStageReward}</b> 枚獲得！`;
 
@@ -1011,7 +1123,6 @@
             saveData(); logMsg(logRewardMsg, "#f1c40f"); endBattle();
         } else if (!battleState.player.some(p => p.currentHp > 0)) {
             if (battleState.isEndless) {
-                // エンドレスモード全滅時の報酬
                 let rewardCoins = battleState.defeatedCount * 30;
                 playerCoins += rewardCoins;
                 saveData();
