@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver11 - サマー＆エンドレス拡張アップデート</title>
+<title>スライムカードバトル Ver13 - レベルアップ機能追加</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -191,6 +191,7 @@
         <button onclick="changeScreen('screen-gacha')">💎 ガチャを引く</button>
         <button onclick="changeScreen('screen-craft')" style="background-color: #f39c12; border: 2px solid #e67e22;">🔨 合成 (クラフト)</button>
         <button onclick="initAwakenScreen()" style="background-color: #ff3399; border: 2px solid #c71585;">✨ スライム覚醒</button>
+        <button onclick="initLevelUpScreen()" style="background-color: #27ae60; border: 2px solid #2ecc71;">🔼 レベルアップ</button>
         <button onclick="initBookScreen()" style="background-color: #8e44ad;">📖 スライム図鑑</button>
         <button onclick="resetData()" style="background-color: #e74c3c; width: 40%; font-size: 12px; padding: 8px; margin-top: 30px;">⚠️ データ初期化</button>
     </div>
@@ -213,6 +214,20 @@
             ※一度覚醒するとバトルで自動的に能力が発動します。
         </p>
         <div id="awaken-list" class="card-container"></div>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+
+    <!-- レベルアップ画面 -->
+    <div id="screen-levelup" class="screen">
+        <h2>スライムレベルアップ</h2>
+        <div class="center-container">
+            <div class="coin-header">🪙 <span class="coin-val">0</span> 枚</div>
+        </div>
+        <p style="text-align:center; font-size:13px; margin-bottom: 20px;">
+            コインを消費してスライムのレベルを上げます！<br>
+            【 最大Lv: 30 / 効果: 1LvにつきHP+1 ｜ 10LvごとにATK+3 】
+        </p>
+        <div id="levelup-list" class="card-container"></div>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
@@ -272,7 +287,7 @@
         <button onclick="startBattle(4)" style="background-color: #e67e22; border: 2px solid #f1c40f;">🌺 イベント: 南のビーチ (報奨 300🪙+1🏖️)</button>
         <button onclick="startBattle(5)" style="background-color: #8e44ad; border: 2px solid #9b59b6; margin-top:15px; padding: 15px;">💀 ステージ5: 魔王の玉座<br>(ボスバトル / 報奨 1500🪙)</button>
         
-        <button onclick="startBattle('endless')" style="background-color: #c0392b; border: 2px solid #e74c3c; margin-top:15px; padding: 15px;">♾️ 新モード: エンドレスモード<br>(無限バトル / 3体討伐ごとに全体回復)</button>
+        <button onclick="startBattle('endless')" style="background-color: #c0392b; border: 2px solid #e74c3c; margin-top:15px; padding: 15px;">♾️ 新モード: エンドレスモード<br>(無限バトル / 3体討伐ごとに全体回復 / 獲得コイン3倍)</button>
         
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
@@ -338,6 +353,7 @@
     let playerCoins = 200;
     let playerSummerCoins = 0;
     let playerAwakened = []; 
+    let playerLevels = {};
 
     function saveData() {
         localStorage.setItem(SAVE_KEY, JSON.stringify({ 
@@ -345,7 +361,8 @@
             deck: playerDeck, 
             coins: playerCoins,
             summerCoins: playerSummerCoins,
-            awakened: playerAwakened
+            awakened: playerAwakened,
+            levels: playerLevels
         }));
         updateCoinDisplay();
         updateShopButtons();
@@ -361,6 +378,7 @@
                 playerCoins = (data.coins !== undefined) ? data.coins : 200;
                 playerSummerCoins = (data.summerCoins !== undefined) ? data.summerCoins : 0;
                 playerAwakened = data.awakened || [];
+                playerLevels = data.levels || {};
             } catch(e) {}
         }
         updateCoinDisplay();
@@ -508,12 +526,82 @@
         `;
     }
 
+    function getSlimeLevel(cardId) {
+        return playerLevels[cardId] || 1;
+    }
+
+    function getUpgradeCost(currentLevel) {
+        if (currentLevel >= 30) return 0;
+        return Math.floor(1000 * Math.pow(1.5, currentLevel - 1));
+    }
+
+    function getPlayerCardData(cardId, withHtml = true) {
+        let baseCard = CARD_DB.find(c => c.id === cardId);
+        let lvl = getSlimeLevel(cardId);
+        let nameStr = withHtml ? `${baseCard.name} <span style="font-size:10px;">Lv${lvl}</span>` : `${baseCard.name} Lv${lvl}`;
+        
+        // 10レベルアップごとにATKが3あがるように計算 (例: Lv11~20で+3, Lv21~30で+6)
+        let extraAtk = Math.floor((lvl - 1) / 10) * 3;
+
+        return {
+            ...baseCard,
+            name: nameStr,
+            hp: baseCard.hp + (lvl - 1),
+            atk: baseCard.atk + extraAtk
+        };
+    }
+
+    function initLevelUpScreen() {
+        changeScreen('screen-levelup');
+        const list = document.getElementById('levelup-list');
+        list.innerHTML = "";
+        
+        playerInventory.forEach(cardId => {
+            let cardData = getPlayerCardData(cardId);
+            let lvl = getSlimeLevel(cardId);
+            let cost = getUpgradeCost(lvl);
+            
+            let btnHtml = "";
+            if (lvl >= 30) {
+                btnHtml = `<button disabled style="padding: 6px; font-size: 13px; margin-top: 10px; background-color: #bdc3c7;">LvMAX (30)</button>`;
+            } else {
+                btnHtml = `<button onclick="upgradeSlime(${cardId})" style="padding: 6px; font-size: 13px; margin-top: 10px; background-color: #27ae60;">LvUP (${cost}🪙)</button>`;
+            }
+
+            list.innerHTML += `
+                <div class="card" style="cursor: default;">
+                    <div class="rarity">${cardData.rarity}</div>
+                    <div class="name">${cardData.name}</div>
+                    <div class="illustration-box" style="transform: scale(${cardData.scale});">
+                        ${renderIllustration(cardData)}
+                    </div>
+                    <div class="stats">HP: <span class="hp">${cardData.hp}</span> / ATK: <span class="atk">${cardData.atk}</span></div>
+                    ${btnHtml}
+                </div>
+            `;
+        });
+    }
+
+    function upgradeSlime(cardId) {
+        let lvl = getSlimeLevel(cardId);
+        if (lvl >= 30) return;
+        let cost = getUpgradeCost(lvl);
+        
+        if (playerCoins < cost) return alert("コインが足りません！");
+        
+        playerCoins -= cost;
+        playerLevels[cardId] = lvl + 1;
+        saveData();
+        
+        initLevelUpScreen();
+    }
+
     function initDeckScreen() {
         changeScreen('screen-deck');
         const list = document.getElementById('inventory-list');
         list.innerHTML = "";
         playerInventory.forEach(cardId => {
-            let cardData = CARD_DB.find(c => c.id === cardId);
+            let cardData = getPlayerCardData(cardId);
             list.innerHTML += createCardHTML(cardData, playerDeck.includes(cardId), false);
         });
         document.getElementById('deck-count').innerText = playerDeck.length;
@@ -528,7 +616,8 @@
             { id: 2, desc: "技「ひのこ」が全体攻撃になる！", cost: 3000 },
             { id: 3, desc: "通常攻撃が全体攻撃になる！", cost: 3000 },
             { id: 1, desc: "特性の回復量が 5 → 10 に倍増！", cost: 3000 },
-            { id: 8, desc: "技の攻撃回数が2倍(10回)になる！", cost: 15000 }
+            { id: 8, desc: "技の攻撃回数が2倍(10回)になる！", cost: 15000 },
+            { id: 15, desc: "通常攻撃時、相手の最大HPを10減らし、自身のHPを5回復する！", cost: 12000 } // 変化スライムの覚醒を追加
         ];
 
         awakenTargets.forEach(target => {
@@ -586,12 +675,11 @@
         const list = document.getElementById('book-list');
         list.innerHTML = "";
         CARD_DB.forEach(card => {
-            if (playerInventory.includes(card.id)) list.innerHTML += createCardHTML(card, false, true);
+            if (playerInventory.includes(card.id)) list.innerHTML += createCardHTML(getPlayerCardData(card.id), false, true);
             else if (card.id !== 99) list.innerHTML += `<div class="card unknown"><div>???</div></div>`;
         });
     }
 
-    // ガチャラインナップ用関数
     let isLineupVisible = false;
     function toggleLineup() {
         isLineupVisible = !isLineupVisible;
@@ -635,15 +723,14 @@
         document.getElementById('gacha-card-display').innerHTML = createCardHTML(newCard, false, true);
     }
     
-    // サマーガチャ
     function drawSummerGacha() {
         if (playerCoins < 500) return alert("コインが足りません！");
         
         let rand = Math.random() * 100;
         let newCardId;
-        if (rand < 2) newCardId = 18; // 2% アイススライム
-        else if (rand < 20) newCardId = 17; // 18% スラ男
-        else newCardId = 16; // 80% スラミー
+        if (rand < 2) newCardId = 18;
+        else if (rand < 20) newCardId = 17;
+        else newCardId = 16;
 
         let newCard = CARD_DB.find(c => c.id === newCardId);
         
@@ -657,7 +744,6 @@
         saveData();
         document.getElementById('gacha-card-display').innerHTML = createCardHTML(newCard, false, true);
     }
-
 
     function playSkillEffect(targetUid, type) {
         const targetElem = document.getElementById(`card-${targetUid}`);
@@ -738,12 +824,15 @@
         battleState.currentStageId = stageId;
         battleState.isOver = false;
 
-        battleState.player = playerDeck.map((id, index) => ({ 
-            ...CARD_DB.find(c => c.id === id), 
-            currentHp: CARD_DB.find(c => c.id === id).hp, 
-            uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false,
-            isAwakened: playerAwakened.includes(id)
-        }));
+        battleState.player = playerDeck.map((id, index) => {
+            let pCard = getPlayerCardData(id, false);
+            return { 
+                ...pCard, 
+                currentHp: pCard.hp, 
+                uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false,
+                isAwakened: playerAwakened.includes(id)
+            };
+        });
 
         if (stageId === 'endless') {
             battleState.isEndless = true;
@@ -901,6 +990,17 @@
                     showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid);
                     logMsg(`[${actor.name}]の通常攻撃！ ${target.name}に ${dmg} のダメージ！`, color);
 
+                    // 変化スライム（id: 15）の覚醒効果：通常攻撃時に相手の最大HPを10減らし、自身のHPを5回復する
+                    if (actor.id === 15 && actor.isAwakened && dmg > 0 && target.currentHp > 0) {
+                        target.hp = Math.max(1, target.hp - 10);
+                        if (target.currentHp > target.hp) target.currentHp = target.hp;
+                        showFloatingText(target.uid, "最大HP -10", "#8a2be2");
+
+                        actor.currentHp = Math.min(actor.hp, actor.currentHp + 5);
+                        showFloatingText(actor.uid, "+5", "#2ecc71");
+                        logMsg(`✨ [覚醒] ${actor.name}の生命吸収！ ${target.name}の最大HPを10減らし、自身のHPを5回復！`, "#8a2be2");
+                    }
+
                     if (actor.id === 8 && dmg > 0 && actor.currentHp > 0) {
                         actor.currentHp = Math.min(actor.hp, actor.currentHp + 2);
                         showFloatingText(actor.uid, "+2", "#2ecc71");
@@ -934,7 +1034,6 @@
                     logMsg(`🔥 [特性] ${c.name}の闇の衝動！攻撃力が上がった！`, "#e74c3c");
                 }
 
-                // スラミーの特性
                 if (c.currentHp > 0 && c.id === 16) {
                     c.currentHp = Math.min(c.hp, c.currentHp + 1);
                     showFloatingText(c.uid, `+1`, "#2ecc71"); 
@@ -942,7 +1041,7 @@
 
                 if (c.currentHp > 0 && c.id === 99) {
                     c.currentHp = Math.min(c.hp, c.currentHp + 15);
-                    showFloatingText(c.uid, "+15", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の魔王の威圧！HPが15回復！`, "#2ecc71");
+                    showFloatingText(c.uid, "+15", "#2ecc71"); logMsg(`✨ [特性] ${c.name}の魔王の威厳！HPが15回復！`, "#2ecc71");
                 }
                 
                 if (c.currentHp > 0 && c.voidTurns > 0) {
@@ -963,7 +1062,7 @@
         let dmg = Math.floor(baseDmg * (0.8 + Math.random() * 0.4));
         if(attacker.id === 2 && attacker.currentHp <= attacker.hp / 2) dmg = Math.floor(dmg * 1.5);
         if(defender.id === 3) dmg -= 2;
-        if(defender.id === 17) dmg -= 1; // スラ男の特性
+        if(defender.id === 17) dmg -= 1;
         if(defender.id === 4 && Math.random() < 0.3) dmg = Math.floor(dmg / 2);
         if(defender.id === 6) dmg = Math.floor(dmg * 0.9);
         if(defender.isDefending) dmg = Math.floor(dmg / 2);
@@ -983,7 +1082,7 @@
                 showFloatingText(target.uid, "復活!", "#f39c12");
                 logMsg(`✨ [特性] ${target.name}は一度だけHP1で復活した！`, "#f39c12");
             } else if (target.id === 19) {
-                target.currentHp = target.hp; // HPマックスで復活
+                target.currentHp = target.hp;
                 target.hasRevived = true;
                 showFloatingText(target.uid, "完全復活!", "#f1c40f");
                 logMsg(`✨ [特性] ${target.name}は黄金の輝きで完全復活した！`, "#f1c40f");
@@ -1138,7 +1237,7 @@
                 break;
             case 15:
                 playSkillEffect(target.uid, 'poison');
-                target.hp = Math.max(1, target.hp - 35); // ★ご要望通り 35に減少
+                target.hp = Math.max(1, target.hp - 35);
                 if (target.currentHp > target.hp) target.currentHp = target.hp;
                 
                 showFloatingText(target.uid, "最大HP -35", "#9b59b6");
@@ -1154,23 +1253,22 @@
                 await sleep(500);
                 break;
 
-            case 16: // スラミー
-            case 17: // スラ男
+            case 16:
+            case 17:
                 playSkillEffect(target.uid, 'slash');
                 dmg = calculateDamage(actor, target, actor.atk); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
 
-            case 18: // アイススライム
+            case 18:
                 shakeScreen();
                 logMsg(`[${actor.name}]の ${actor.skill}！冷気が敵を襲う！`, color);
                 let mainStunned = false;
                 for (let t of targets) {
                     playSkillEffect(t.uid, 'water');
-                    let d = calculateDamage(actor, t, actor.atk * 0.5); // 弱いダメージ
+                    let d = calculateDamage(actor, t, actor.atk * 0.5);
                     dealDamage(t, d);
                     showFloatingText(t.uid, `-${d}`, "#00ced1");
                     animateHit(t.uid);
                     
-                    // 相手1体（メインターゲット）に50%スタン
                     if (t.uid === target.uid && t.currentHp > 0 && Math.random() < 0.5) {
                         if (t.id === 99) {
                             showFloatingText(t.uid, "無効!", "#bdc3c7");
@@ -1183,7 +1281,6 @@
                 }
                 await sleep(500);
                 
-                // 特性：相手をスタンさせたとき、相手全体に25%でスタン付与
                 if (mainStunned && actor.currentHp > 0) {
                     logMsg(`✨ [特性] ${actor.name}の凍結連鎖！冷気が周りにも広がる！`, "#00ced1");
                     for (let t of targets) {
@@ -1197,7 +1294,7 @@
                 }
                 break;
                 
-            case 19: // 金スライム
+            case 19:
                 logMsg(`[${actor.name}]の ${actor.skill}！黄金の光が味方を癒す！`, color);
                 for (let a of allies) {
                     if (a.currentHp <= 0) continue;
@@ -1247,7 +1344,6 @@
             if (battleState.isEndless) {
                 battleState.endlessWave++;
                 
-                // --- Wave 30 到達報酬 ---
                 if (battleState.endlessWave === 30) {
                     if (!playerInventory.includes(19)) {
                         playerInventory.push(19);
@@ -1283,10 +1379,11 @@
             saveData(); logMsg(logRewardMsg, "#f1c40f"); endBattle();
         } else if (!battleState.player.some(p => p.currentHp > 0)) {
             if (battleState.isEndless) {
-                let rewardCoins = battleState.defeatedCount * 30;
+                // エンドレスでもらえるコイン量を3倍に変更（もともと 30 * 討伐数 → 90 * 討伐数）
+                let rewardCoins = battleState.defeatedCount * 90;
                 playerCoins += rewardCoins;
                 saveData();
-                logMsg(`<br>💀 エンドレスモード終了...<br>到達 Wave: <b>${battleState.endlessWave}</b><br>総討伐数: <b>${battleState.defeatedCount} 体</b><br>獲得報酬: 🪙<b>${rewardCoins}</b> 枚`, "#e74c3c");
+                logMsg(`<br>💀 エンドレスモード終了...<br>到達 Wave: <b>${battleState.endlessWave}</b><br>総討伐数: <b>${battleState.defeatedCount} 体</b><br>獲得報酬(3倍): 🪙<b>${rewardCoins}</b> 枚`, "#e74c3c");
             } else {
                 logMsg("<br>💀 敗北しました...", "#e74c3c");
             }
@@ -1301,7 +1398,7 @@
 
     window.onload = function() {
         loadData();
-        initGachaLineup(); // ガチャラインナップの初期生成
+        initGachaLineup();
     };
 </script>
 </body>
