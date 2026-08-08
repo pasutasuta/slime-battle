@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver14 - エンドレスランキング追加</title>
+<title>スライムカードバトル Ver14 - オンラインエンドレスランキング対応</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -214,8 +214,8 @@
 
         <button onclick="changeScreen('screen-stage')">⚔️ バトルに出発</button>
         
-        <!-- ランキングボタン追加 -->
-        <button onclick="initRankingScreen()" style="background-color: #34495e; border: 2px solid #2c3e50;">🏆 ウェーブランキング</button>
+        <!-- ランキングボタン -->
+        <button onclick="initRankingScreen()" style="background-color: #34495e; border: 2px solid #2c3e50;">🏆 オンラインウェーブランキング</button>
         
         <button onclick="initDeckScreen()">📋 デッキ編成</button>
         <button onclick="changeScreen('screen-gacha')">💎 ガチャを引く</button>
@@ -228,12 +228,12 @@
 
     <!-- ランキング画面 -->
     <div id="screen-ranking" class="screen">
-        <h2>エンドレスランキング</h2>
+        <h2>オンラインエンドレスランキング</h2>
         <div class="center-container" style="margin-bottom: 15px;">
             <span style="font-size: 13px; font-weight: bold; color: #555;">世界のプレイヤーと到達Waveを競おう！</span>
         </div>
         <div id="ranking-list" style="background:#fff; border-radius:8px; border: 2px solid #bdc3c7; max-height: 400px; overflow-y:auto; margin: 0 auto 20px auto; width: 90%; max-width: 450px;">
-            <p style="text-align:center; padding: 20px; font-weight: bold; color: #7f8c8d;">読み込み中...</p>
+            <p style="text-align:center; padding: 20px; font-weight: bold; color: #7f8c8d;">サーバー接続中...</p>
         </div>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
@@ -433,31 +433,45 @@
     }
 
     // ==========================================
-    // ランキングAPI通信処理 (擬似オンラインAPI)
+    // 本格オンラインランキングAPI通信処理 (KVDB利用)
     // ==========================================
+    const KVDB_BUCKET = "slime_card_battle_global_ranking_2026";
 
     async function submitRanking(name, wave) {
         try {
-            let rankingData = JSON.parse(localStorage.getItem("slime_dummy_server_ranking") || "[]");
+            let res = await fetch(`https://kvdb.io/${KVDB_BUCKET}/ranking`);
+            let rankingData = [];
+            if (res.ok) {
+                const text = await res.text();
+                if (text) rankingData = JSON.parse(text);
+            }
+            
             rankingData.push({ name: name, wave: wave, date: Date.now() });
             
-            // Wave数の降順に並び替え、上位100件を保存
+            // 降順ソート＆上位100件保存
             rankingData.sort((a, b) => b.wave - a.wave);
             rankingData = rankingData.slice(0, 100);
-            localStorage.setItem("slime_dummy_server_ranking", JSON.stringify(rankingData));
-            console.log("スコア送信完了:", name, wave);
+            
+            await fetch(`https://kvdb.io/${KVDB_BUCKET}/ranking`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rankingData)
+            });
+            console.log("オンラインスコア送信成功:", name, wave);
         } catch (e) {
-            console.error("スコアの送信に失敗しました", e);
+            console.error("オンラインスコアの送信に失敗しました", e);
         }
     }
 
     async function fetchRanking() {
         try {
-            await sleep(400); // サーバー通信のモック遅延
-            let rankingData = JSON.parse(localStorage.getItem("slime_dummy_server_ranking") || "[]");
-            return rankingData;
+            let res = await fetch(`https://kvdb.io/${KVDB_BUCKET}/ranking`);
+            if (!res.ok) return [];
+            const text = await res.text();
+            if (!text) return [];
+            return JSON.parse(text);
         } catch (e) {
-            console.error("ランキングの取得に失敗しました", e);
+            console.error("オンラインランキングの取得に失敗しました", e);
             throw e;
         }
     }
@@ -465,12 +479,12 @@
     async function initRankingScreen() {
         changeScreen('screen-ranking');
         const list = document.getElementById('ranking-list');
-        list.innerHTML = "<p style='text-align:center; padding: 20px; font-weight: bold; color: #7f8c8d;'>🌍 サーバーと通信中...</p>";
+        list.innerHTML = "<p style='text-align:center; padding: 20px; font-weight: bold; color: #7f8c8d;'>🌍 オンラインサーバーと通信中...</p>";
         
         try {
             const data = await fetchRanking();
             if (data.length === 0) {
-                list.innerHTML = "<p style='text-align:center; padding: 20px; color: #555;'>まだ誰も到達していません。<br>一番乗りを目指そう！</p>";
+                list.innerHTML = "<p style='text-align:center; padding: 20px; color: #555;'>まだ誰もスコアを登録していません。<br>一番乗りを目指そう！</p>";
                 return;
             }
             
@@ -481,7 +495,6 @@
                 if(index === 1) rankIcon = "🥈 2位";
                 if(index === 2) rankIcon = "🥉 3位";
 
-                // 1位かつ自分の名前の場合にボタンを表示
                 let claimBtnHtml = "";
                 if (index === 0 && entry.name === playerName) {
                     if (!playerInventory.includes(19)) {
@@ -501,7 +514,7 @@
             });
             list.innerHTML = html;
         } catch(e) {
-            list.innerHTML = "<p style='text-align:center; color:red; padding: 20px;'>通信エラーが発生しました。</p>";
+            list.innerHTML = "<p style='text-align:center; color:red; padding: 20px;'>通信エラーが発生しました。インターネット接続を確認してください。</p>";
         }
     }
 
@@ -509,7 +522,7 @@
         if (!playerInventory.includes(19)) {
             playerInventory.push(19);
             saveData();
-            alert("🎉 ランキング1位報酬！「金スライム」を獲得しました！");
+            alert("🎉 オンラインランキング1位報酬！「金スライム」を獲得しました！");
             initRankingScreen();
         }
     }
@@ -965,7 +978,7 @@
             battleState.defeatedCount = 0;
             battleState.currentStageReward = 0;
             battleState.enemy = generateEndlessEnemies(1);
-            logMsg("🔥 エンドレスモード開始！倒せる限り戦い続けろ！", "#e74c3c");
+            logMsg("🔥 エンドレスモード開始！オンラインランキング上位を目指せ！", "#e74c3c");
         } else {
             battleState.isEndless = false;
             let stageInfo = STAGES[stageId];
@@ -1404,149 +1417,76 @@
                     }
                 }
                 await sleep(500);
-                
-                if (mainStunned && actor.currentHp > 0) {
-                    logMsg(`✨ [特性] ${actor.name}の凍結連鎖！冷気が周りにも広がる！`, "#00ced1");
-                    for (let t of targets) {
-                        if (t.currentHp > 0 && t.uid !== target.uid && Math.random() < 0.25) {
-                            if (t.id === 99) continue;
-                            t.stunTurns = 1;
-                            showFloatingText(t.uid, "スタン!", "#f1c40f");
-                        }
-                    }
-                    await sleep(400);
-                }
-                break;
-                
-            case 19:
-                logMsg(`[${actor.name}]の ${actor.skill}！黄金の光が味方を癒す！`, color);
-                for (let a of allies) {
-                    if (a.currentHp <= 0) continue;
-                    playSkillEffect(a.uid, 'heal');
-                    a.currentHp = Math.min(a.hp, a.currentHp + 20);
-                    showFloatingText(a.uid, `+20`, "#2ecc71");
-                }
-                await sleep(500);
-                break;
-
-            case 20:
-                logMsg(`[${actor.name}]の ${actor.skill}！味方全体の攻撃力が上がり、相手に強力な一撃！`, color);
-                for (let a of allies) {
-                    if (a.currentHp <= 0) continue;
-                    a.atk += 2;
-                    showFloatingText(a.uid, "ATK+2", "#e67e22");
-                }
-                playSkillEffect(target.uid, 'punch');
-                let fixedDmg = 50;
-                dealDamage(target, fixedDmg);
-                showFloatingText(target.uid, `-${fixedDmg}`, "#e74c3c");
-                await animateHit(target.uid);
-                logMsg(` -> ${target.name}に ${fixedDmg} の固定ダメージ！`, color);
-                await sleep(500);
-                break;
-
-            case 99:
-                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！！圧倒的な闇の力が迸る！`, "#e74c3c");
-                for (let t of targets) { playSkillEffect(t.uid, 'darkness'); let d = calculateDamage(actor, t, actor.atk * 1.5); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#c0392b"); animateHit(t.uid); } await sleep(600); break;
-        }
-    }
-
-    function checkEnemyDeaths() {
-        let currentEnemies = battleState.enemy;
-        currentEnemies.forEach(e => {
-            if (e.currentHp <= 0 && !e.isDeadProcessed) {
-                e.isDeadProcessed = true;
-
-                battleState.player.forEach(p => {
-                    if (p.id === 20 && p.currentHp > 0) {
-                        if (p.cooldown > 0) {
-                            p.cooldown = Math.max(0, p.cooldown - 1);
-                            showFloatingText(p.uid, "CT-1", "#8e44ad");
-                            logMsg(`🥊 [特性] 敵の死亡により ${p.name} の技クールダウンが1短縮！(残り${p.cooldown}T)`, "#8e44ad");
-                        }
-                    }
-                });
-
-                if (battleState.isEndless) {
-                    battleState.defeatedCount++;
-                    logMsg(`💀 敵を1体撃破！ (通算討伐数: ${battleState.defeatedCount}体)`, "#f1c40f");
-
-                    if (battleState.defeatedCount % 3 === 0) {
-                        let healAmount = 50;
-                        logMsg(`✨【ボーナス】敵を3体撃破！ 味方全体のHPが ${healAmount} 回復！`, "#2ecc71");
-                        battleState.player.forEach(p => {
-                            if (p.currentHp > 0) {
-                                p.currentHp = Math.min(p.hp, p.currentHp + healAmount);
-                                showFloatingText(p.uid, `+${healAmount}`, "#2ecc71");
-                                playSkillEffect(p.uid, 'heal');
+                if (mainStunned && actor.id === 18 && actor.isAwakened) {
+                    if (Math.random() < 0.25) {
+                        logMsg(`✨ [特性] 凍結連鎖発動！追加で全体にスタン付与！`, "#e0ffff");
+                        for (let t of targets) {
+                            if (t.currentHp > 0 && t.id !== 99) {
+                                t.stunTurns = 1;
+                                showFloatingText(t.uid, "連鎖スタン!", "#f1c40f");
                             }
-                        });
+                        }
+                        await sleep(400);
                     }
                 }
-            }
-        });
+                break;
+        }
     }
 
     function checkWinLoss() {
-        if(battleState.isOver) return;
+        let playerAlive = battleState.player.some(p => p.currentHp > 0);
+        let enemyAlive = battleState.enemy.some(e => e.currentHp > 0);
 
-        checkEnemyDeaths();
-
-        if (!battleState.enemy.some(e => e.currentHp > 0)) {
+        if (!playerAlive) {
+            battleState.isOver = true;
+            document.getElementById('command-area').style.display = 'none';
+            logMsg("💀 敗北しました...", "#e74c3c");
             if (battleState.isEndless) {
+                let finalWave = battleState.endlessWave;
+                logMsg(`🏆 エンドレスモード到達Wave: ${finalWave} (スコア送信中...)`, "#f1c40f");
+                submitRanking(playerName, finalWave);
+            }
+            document.getElementById('btn-battle-end').style.display = 'block';
+        } else if (!enemyAlive) {
+            if (battleState.isEndless) {
+                battleState.defeatedCount += battleState.enemy.length;
                 battleState.endlessWave++;
-                logMsg(`<br>⚔️ Wave ${battleState.endlessWave} に突入！敵が現れた！`, "#f1c40f");
+                logMsg(`🎉 Wave ${battleState.endlessWave - 1} クリア！次のWaveへ進みます！`, "#2ecc71");
+                
+                battleState.player.forEach(p => {
+                    if (p.currentHp > 0) {
+                        let heal = Math.floor(p.hp * 0.3);
+                        p.currentHp = Math.min(p.hp, p.currentHp + heal);
+                        showFloatingText(p.uid, `全体回復 +${heal}`, "#2ecc71");
+                    }
+                });
+                
+                playerCoins += 150 * (battleState.endlessWave - 1);
+                saveData();
+
                 battleState.enemy = generateEndlessEnemies(battleState.endlessWave);
                 updateBattleUI();
-                return;
-            }
-
-            playerCoins += battleState.currentStageReward;
-            let logRewardMsg = `<br>🎉 勝利しました！！ コインを 🪙<b>${battleState.currentStageReward}</b> 枚獲得！`;
-
-            let currentStage = STAGES[battleState.currentStageId];
-            if (currentStage && currentStage.isEvent) {
-                playerSummerCoins += 1;
-                logRewardMsg += `<br>🏖️ サマーコインを <b>1</b> 枚獲得！`;
-
-                if (Math.random() < 0.01) {
-                    let dropCard = CARD_DB.find(c => c.id === 8);
-                    if (!playerInventory.includes(dropCard.id)) {
-                        playerInventory.push(dropCard.id);
-                        logRewardMsg += `<br><span style="color:#f39c12; font-size:16px;">✨【1%超激レアGET】${dropCard.name} を獲得しました！！</span>`;
-                    } else {
-                        logRewardMsg += `<br><span style="color:#f39c12;">✨ サマースライムがドロップ！（すでに入手済み）</span>`;
-                    }
-                }
-            }
-            saveData(); logMsg(logRewardMsg, "#f1c40f"); endBattle();
-        } else if (!battleState.player.some(p => p.currentHp > 0)) {
-            if (battleState.isEndless) {
-                let rewardCoins = battleState.defeatedCount * 200;
-                playerCoins += rewardCoins;
-                saveData();
-                logMsg(`<br>💀 エンドレスモード終了...<br>到達 Wave: <b>${battleState.endlessWave}</b><br>総討伐数: <b>${battleState.defeatedCount} 体</b><br>獲得報酬(3倍): 🪙<b>${rewardCoins}</b> 枚`, "#e74c3c");
-                
-                // --- ランキングにスコアを送信 ---
-                submitRanking(playerName, battleState.endlessWave);
-                logMsg(`<br>🏆 ランキングサーバーに記録を送信しました！`, "#3498db");
-                
+                startCommandPhase();
             } else {
-                logMsg("<br>💀 敗北しました...", "#e74c3c");
+                battleState.isOver = true;
+                document.getElementById('command-area').style.display = 'none';
+                logMsg("🎉 勝利しました！", "#2ecc71");
+                playerCoins += battleState.currentStageReward;
+                
+                if (battleState.currentStageId === 4) {
+                    playerSummerCoins += 1;
+                    logMsg("🏖️ サマーコインを 1 枚獲得しました！", "#00acc1");
+                }
+                
+                saveData();
+                document.getElementById('btn-battle-end').style.display = 'block';
             }
-            endBattle();
         }
     }
 
-    function endBattle() {
-        battleState.isOver = true; document.getElementById('command-area').style.display = 'none';
-        document.getElementById('btn-battle-end').style.display = 'block'; updateBattleUI();
-    }
-
-    window.onload = function() {
-        loadData();
-        initGachaLineup();
-    };
+    // 初期化実行
+    loadData();
+    initGachaLineup();
 </script>
 </body>
 </html>
