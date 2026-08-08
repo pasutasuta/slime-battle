@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver10 - 覚醒アップデート</title>
+<title>スライムカードバトル Ver11 - サマー＆エンドレス拡張アップデート</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -244,7 +244,21 @@
             <div class="coin-header">🪙 <span class="coin-val">0</span> 枚 ｜ 🏖️ <span class="summer-coin-val">0</span> 枚</div>
         </div>
         <p style="text-align:center; margin-bottom: 5px;">1回: <b>100 コイン</b></p>
+        
+        <button onclick="toggleLineup()" style="background-color: #7f8c8d; font-size: 13px; padding: 6px; width: 50%; margin: 5px auto;">📋 排出ラインナップ</button>
+        <div id="gacha-lineup-list" style="display:none; background: #fff; border: 1px solid #ccc; width: 70%; margin: 0 auto 10px auto; border-radius: 4px;"></div>
+        
         <button id="btn-draw-gacha" onclick="drawGacha()" style="background-color: #f1c40f; color: #333;">ガチャを回す (100枚)</button>
+        
+        <div style="margin-top: 20px; border-top: 2px dashed #bdc3c7; padding-top: 15px;">
+            <h3 style="color: #00838f; margin-top: 0;">🏖️ サマーガチャ</h3>
+            <p style="text-align:center; margin-bottom: 5px;">1回: <b>500 コイン</b></p>
+            <div style="font-size: 11px; text-align: center; margin-bottom: 10px; color: #555; font-weight: bold;">
+                【ラインナップ】<br>スラミー: 80% / スラ男: 18% / アイススライム: 2%
+            </div>
+            <button id="btn-draw-summer" onclick="drawSummerGacha()" style="background-color: #00acc1; color: #fff;">サマーガチャを回す (500枚)</button>
+        </div>
+
         <div id="gacha-result" style="text-align: center; font-size: 18px; margin: 15px; font-weight: bold; min-height: 25px;"></div>
         <div id="gacha-card-display" style="display:flex; justify-content:center;"></div>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
@@ -291,7 +305,7 @@
         { id: 4, name: "硬いスライム", hp: 50, atk: 6, skill: "ぼうぎょ", skillDesc: "このターン被ダメ半減", trait: "鉄壁", traitDesc: "30%の確率でさらに半減", rarity: "R", color: "#7f8c8d", scale: 1.1, imageURL: "", gachaRate: 15 },
         { id: 5, name: "毒スライム", hp: 25, atk: 18, skill: "どくえき", skillDesc: "必ず10追加ダメージ", trait: "毒の体", traitDesc: "通常攻撃時ダメージ+5", rarity: "R", color: "#9b59b6", scale: 1.0, imageURL: "", gachaRate: 15 },
         { id: 6, name: "キングスライム", hp: 80, atk: 25, skill: "のしかかり", skillDesc: "敵全体にダメージ", trait: "王の威圧", traitDesc: "被ダメージ10%軽減", rarity: "SR", color: "#f1c40f", scale: 1.4, imageURL: "", gachaRate: 3 },
-        { id: 7, name: "メタルスライム", hp: 12, atk: 30, skill: "会心の一撃", skillDesc: "2倍の強力なダメージ", trait: "メタルボディ", traitDesc: "被ダメが1か0になる", rarity: "SR", color: "#bdc3c7", scale: 0.8, imageURL: "", gachaRate: 2 },
+        { id: 7, name: "メタルスライム", hp: 5, atk: 30, skill: "会心の一撃", skillDesc: "2倍の強力なダメージ", trait: "メタルボディ", traitDesc: "被ダメが1か0になる", rarity: "SR", color: "#bdc3c7", scale: 0.8, imageURL: "", gachaRate: 2 },
         { id: 8, name: "サマースライム", hp: 35, atk: 10, skill: "ウォーターラッシュ", skillDesc: "ランダムな敵に5回攻撃", trait: "サマーリフレッシュ", traitDesc: "与ダメのたびHP2回復", rarity: "EX", color: "#00ced1", scale: 1.1, imageURL: "", gachaRate: 0 },
         { id: 9, name: "ギャラクシースライム", hp: 70, atk: 24, skill: "ボイドホール", skillDesc: "敵1体を虚無状態(毎Tダメ)にする", trait: "虚無の侵食", traitDesc: "虚無状態の敵に与えるダメ1.5倍", rarity: "UR", color: "#4b0082", scale: 1.3, imageURL: "", gachaRate: 0 },
         { id: 10, name: "メテオスライム", hp: 85, atk: 22, skill: "メテオフォール", skillDesc: "敵全体に強力なダメージ", trait: "不滅の流星", traitDesc: "HPが0になると一度だけHP1で復活", rarity: "UR", color: "#d35400", scale: 1.3, imageURL: "", gachaRate: 0 },
@@ -300,7 +314,12 @@
         { id: 12, name: "闇スライム", hp: 47, atk: 12, skill: "ダークバレット", skillDesc: "ランダムな敵2体にダメージ", trait: "闇の衝動", traitDesc: "毎ターンATK+1", rarity: "SR", color: "#2c3e50", scale: 1.0, imageURL: "", gachaRate: 10 },
         { id: 13, name: "光闇スライム", hp: 50, atk: 5, skill: "カオスサークル", skillDesc: "味方全体HP7回復＆敵全体に虚無", trait: "混沌の再生", traitDesc: "毎ターン自分のHPを5回復", rarity: "UR", color: "linear-gradient(135deg, #f1c40f 50%, #2c3e50 50%)", scale: 1.2, imageURL: "", gachaRate: 0 },
         { id: 14, name: "海水スライム", hp: 45, atk: 12, skill: "スプラッシュ", skillDesc: "全体ダメージ＆20%でスタン", trait: "海の癒し", traitDesc: "スタンするごとにHP7回復", rarity: "EX", color: "#00acc1", scale: 1.1, imageURL: "", gachaRate: 0 },
-        { id: 15, name: "変化スライム", hp: 55, atk: 10, skill: "マックスドレイン", skillDesc: "敵1体の最大体力を20減らす", trait: "生命吸収", traitDesc: "最大体力を減らしたときHP20回復", rarity: "UR", color: "#8a2be2", scale: 1.2, imageURL: "", gachaRate: 0 },
+        { id: 15, name: "変化スライム", hp: 55, atk: 10, skill: "マックスドレイン", skillDesc: "敵1体の最大体力を35減らす", trait: "生命吸収", traitDesc: "最大体力を減らしたときHP20回復", rarity: "UR", color: "#8a2be2", scale: 1.2, imageURL: "", gachaRate: 0 },
+        
+        { id: 16, name: "スラミー", hp: 15, atk: 5, skill: "ぽよん", skillDesc: "相手1体にダメージ", trait: "のんびり", traitDesc: "毎ターン終了時HP1回復", rarity: "N", color: "#ffb6c1", scale: 0.9, imageURL: "", gachaRate: 0 },
+        { id: 17, name: "スラ男", hp: 20, atk: 7, skill: "体当たり", skillDesc: "相手1体にダメージ", trait: "少し硬い", traitDesc: "受けるダメージ常に-1", rarity: "N", color: "#add8e6", scale: 0.95, imageURL: "", gachaRate: 0 },
+        { id: 18, name: "アイススライム", hp: 65, atk: 12, skill: "アイスブレス", skillDesc: "全体小ダメ＆対象を50%でスタン", trait: "凍結連鎖", traitDesc: "スタン付与時、全体に25%でスタン付与", rarity: "SR", color: "#e0ffff", scale: 1.1, imageURL: "", gachaRate: 0 },
+        { id: 19, name: "金スライム", hp: 20, atk: 5, skill: "ゴールデンヒール", skillDesc: "味方全体のHPを20回復", trait: "黄金の輝き", traitDesc: "死んでも一度だけHPマックスで復活", rarity: "UR", color: "#ffd700", scale: 1.0, imageURL: "", gachaRate: 0 },
 
         { id: 99, name: "魔王スライム", hp: 800, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
     ];
@@ -318,7 +337,7 @@
     let playerDeck = [1, 2, 3];
     let playerCoins = 200;
     let playerSummerCoins = 0;
-    let playerAwakened = []; // 覚醒済みスライムIDを保持する配列
+    let playerAwakened = []; 
 
     function saveData() {
         localStorage.setItem(SAVE_KEY, JSON.stringify({ 
@@ -420,7 +439,6 @@
         changeScreen('screen-home');
     }
 
-    // --- エンドレスモード機能拡張用変数 ---
     let battleState = { 
         player: [], 
         enemy: [], 
@@ -454,6 +472,10 @@
         if (card.id === 13) crownHtml = `<div class="crown">☯️</div>`;
         if (card.id === 14) crownHtml = `<div class="crown" style="font-size:16px;">🌊</div>`;
         if (card.id === 15) crownHtml = `<div class="crown">🎭</div>`;
+        if (card.id === 16) crownHtml = `<div class="crown" style="font-size:16px;">🎀</div>`;
+        if (card.id === 17) crownHtml = `<div class="crown" style="font-size:16px;">🧢</div>`;
+        if (card.id === 18) crownHtml = `<div class="crown" style="font-size:16px;">❄️</div>`;
+        if (card.id === 19) crownHtml = `<div class="crown">💰</div>`;
         if (card.id === 99) crownHtml = `<div class="crown">💀</div>`;
         
         return `
@@ -497,7 +519,6 @@
         document.getElementById('deck-count').innerText = playerDeck.length;
     }
 
-    // --- 覚醒画面の初期化処理 ---
     function initAwakenScreen() {
         changeScreen('screen-awaken');
         const list = document.getElementById('awaken-list');
@@ -543,7 +564,6 @@
         });
     }
 
-    // 覚醒処理の実行関数
     function awakenSlime(cardId, cost) {
         if (playerCoins < cost) return alert("コインが足りません！");
         playerCoins -= cost;
@@ -571,6 +591,26 @@
         });
     }
 
+    // ガチャラインナップ用関数
+    let isLineupVisible = false;
+    function toggleLineup() {
+        isLineupVisible = !isLineupVisible;
+        document.getElementById('gacha-lineup-list').style.display = isLineupVisible ? 'block' : 'none';
+    }
+    
+    function initGachaLineup() {
+        const listDiv = document.getElementById('gacha-lineup-list');
+        const availableCards = CARD_DB.filter(c => c.gachaRate && c.gachaRate > 0);
+        const totalRate = availableCards.reduce((sum, c) => sum + c.gachaRate, 0);
+        let html = "<ul style='text-align: left; margin: 5px; padding-left: 20px; font-size: 12px; color: #333;'>";
+        availableCards.forEach(c => {
+            let rate = ((c.gachaRate / totalRate) * 100).toFixed(1);
+            html += `<li>[${c.rarity}] ${c.name}: ${rate}%</li>`;
+        });
+        html += "</ul>";
+        listDiv.innerHTML = html;
+    }
+
     function drawGacha() {
         if (playerCoins < 100) return alert("コインが足りません！");
         const availableCards = CARD_DB.filter(c => c.gachaRate && c.gachaRate > 0);
@@ -594,6 +634,30 @@
         saveData();
         document.getElementById('gacha-card-display').innerHTML = createCardHTML(newCard, false, true);
     }
+    
+    // サマーガチャ
+    function drawSummerGacha() {
+        if (playerCoins < 500) return alert("コインが足りません！");
+        
+        let rand = Math.random() * 100;
+        let newCardId;
+        if (rand < 2) newCardId = 18; // 2% アイススライム
+        else if (rand < 20) newCardId = 17; // 18% スラ男
+        else newCardId = 16; // 80% スラミー
+
+        let newCard = CARD_DB.find(c => c.id === newCardId);
+        
+        playerCoins -= 500;
+        if (!playerInventory.includes(newCard.id)) {
+            playerInventory.push(newCard.id);
+            document.getElementById('gacha-result').innerHTML = "<span style='color:#e74c3c;'>🎉 NEW! 初獲得!</span>";
+        } else {
+            document.getElementById('gacha-result').innerHTML = "すでに入手済みのカードだ！";
+        }
+        saveData();
+        document.getElementById('gacha-card-display').innerHTML = createCardHTML(newCard, false, true);
+    }
+
 
     function playSkillEffect(targetUid, type) {
         const targetElem = document.getElementById(`card-${targetUid}`);
@@ -659,13 +723,12 @@
                 stunTurns: 0,
                 hasRevived: false,
                 isDeadProcessed: false,
-                isAwakened: false // 敵は覚醒状態なしとする
+                isAwakened: false
             });
         }
         return enemies;
     }
 
-    // --- バトル始動 ---
     function startBattle(stageId) {
         if (playerDeck.length !== 3) return alert("デッキを3枚編成してください！");
         changeScreen('screen-battle');
@@ -679,7 +742,7 @@
             ...CARD_DB.find(c => c.id === id), 
             currentHp: CARD_DB.find(c => c.id === id).hp, 
             uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false,
-            isAwakened: playerAwakened.includes(id) // 覚醒フラグを付与
+            isAwakened: playerAwakened.includes(id)
         }));
 
         if (stageId === 'endless') {
@@ -697,7 +760,7 @@
                 ...CARD_DB.find(c => c.id === id), 
                 currentHp: CARD_DB.find(c => c.id === id).hp, 
                 uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, hasRevived: false, isDeadProcessed: false,
-                isAwakened: false // 敵は覚醒なし
+                isAwakened: false
             }));
         }
         
@@ -819,7 +882,6 @@
             await sleep(300); await animateAttack(actor.uid, cmd.team);
 
             if (cmd.type === 'attack') {
-                // --- 青スライムの覚醒能力: 通常攻撃が全体攻撃 ---
                 if (actor.id === 3 && actor.isAwakened) {
                     shakeScreen();
                     logMsg(`✨ [${actor.name}]の覚醒通常攻撃！全体に攻撃！`, color);
@@ -858,7 +920,6 @@
                 if (c.cooldown > 0) c.cooldown--;
                 
                 if (c.currentHp > 0 && (c.id === 1 || c.id === 11 || c.id === 13)) {
-                    // --- 緑スライムの覚醒能力: 特性の回復量が2倍(10) ---
                     let healAmount = 5;
                     if (c.id === 1 && c.isAwakened) healAmount = 10;
                     
@@ -871,6 +932,12 @@
                     c.atk += 1;
                     showFloatingText(c.uid, "ATK+1", "#e74c3c"); 
                     logMsg(`🔥 [特性] ${c.name}の闇の衝動！攻撃力が上がった！`, "#e74c3c");
+                }
+
+                // スラミーの特性
+                if (c.currentHp > 0 && c.id === 16) {
+                    c.currentHp = Math.min(c.hp, c.currentHp + 1);
+                    showFloatingText(c.uid, `+1`, "#2ecc71"); 
                 }
 
                 if (c.currentHp > 0 && c.id === 99) {
@@ -896,6 +963,7 @@
         let dmg = Math.floor(baseDmg * (0.8 + Math.random() * 0.4));
         if(attacker.id === 2 && attacker.currentHp <= attacker.hp / 2) dmg = Math.floor(dmg * 1.5);
         if(defender.id === 3) dmg -= 2;
+        if(defender.id === 17) dmg -= 1; // スラ男の特性
         if(defender.id === 4 && Math.random() < 0.3) dmg = Math.floor(dmg / 2);
         if(defender.id === 6) dmg = Math.floor(dmg * 0.9);
         if(defender.isDefending) dmg = Math.floor(dmg / 2);
@@ -907,11 +975,19 @@
 
     function dealDamage(target, amount) { 
         target.currentHp = Math.max(0, target.currentHp - amount);
-        if (target.currentHp <= 0 && target.id === 10 && !target.hasRevived) {
-            target.currentHp = 1;
-            target.hasRevived = true;
-            showFloatingText(target.uid, "復活!", "#f39c12");
-            logMsg(`✨ [特性] ${target.name}は一度だけHP1で復活した！`, "#f39c12");
+        
+        if (target.currentHp <= 0 && !target.hasRevived) {
+            if (target.id === 10) {
+                target.currentHp = 1;
+                target.hasRevived = true;
+                showFloatingText(target.uid, "復活!", "#f39c12");
+                logMsg(`✨ [特性] ${target.name}は一度だけHP1で復活した！`, "#f39c12");
+            } else if (target.id === 19) {
+                target.currentHp = target.hp; // HPマックスで復活
+                target.hasRevived = true;
+                showFloatingText(target.uid, "完全復活!", "#f1c40f");
+                logMsg(`✨ [特性] ${target.name}は黄金の輝きで完全復活した！`, "#f1c40f");
+            }
         }
     }
 
@@ -922,7 +998,6 @@
                 playSkillEffect(target.uid, 'slash');
                 dmg = calculateDamage(actor, target, actor.atk * 1.3); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
             case 2: 
-                // --- 赤スライムの覚醒能力: 技が全体攻撃 ---
                 if (actor.isAwakened) {
                     shakeScreen();
                     logMsg(`✨ [${actor.name}]の ${actor.skill}！覚醒の力で全体攻撃！(反動3)`, color);
@@ -1063,10 +1138,10 @@
                 break;
             case 15:
                 playSkillEffect(target.uid, 'poison');
-                target.hp = Math.max(1, target.hp - 20); // 最小1は残す
-                if (target.currentHp > target.hp) target.currentHp = target.hp; // 現在HPの超過分を調整
+                target.hp = Math.max(1, target.hp - 35); // ★ご要望通り 35に減少
+                if (target.currentHp > target.hp) target.currentHp = target.hp;
                 
-                showFloatingText(target.uid, "最大HP -20", "#9b59b6");
+                showFloatingText(target.uid, "最大HP -35", "#9b59b6");
                 await animateHit(target.uid);
                 
                 if (actor.currentHp > 0) {
@@ -1075,7 +1150,61 @@
                     showFloatingText(actor.uid, `+${healAmt}`, "#2ecc71");
                 }
                 
-                logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}の最大HPを20減少させ、自身のHPを20回復！`, color);
+                logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}の最大HPを35減少させ、自身のHPを20回復！`, color);
+                await sleep(500);
+                break;
+
+            case 16: // スラミー
+            case 17: // スラ男
+                playSkillEffect(target.uid, 'slash');
+                dmg = calculateDamage(actor, target, actor.atk); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
+
+            case 18: // アイススライム
+                shakeScreen();
+                logMsg(`[${actor.name}]の ${actor.skill}！冷気が敵を襲う！`, color);
+                let mainStunned = false;
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'water');
+                    let d = calculateDamage(actor, t, actor.atk * 0.5); // 弱いダメージ
+                    dealDamage(t, d);
+                    showFloatingText(t.uid, `-${d}`, "#00ced1");
+                    animateHit(t.uid);
+                    
+                    // 相手1体（メインターゲット）に50%スタン
+                    if (t.uid === target.uid && t.currentHp > 0 && Math.random() < 0.5) {
+                        if (t.id === 99) {
+                            showFloatingText(t.uid, "無効!", "#bdc3c7");
+                        } else {
+                            t.stunTurns = 1;
+                            showFloatingText(t.uid, "スタン!", "#f1c40f");
+                            mainStunned = true;
+                        }
+                    }
+                }
+                await sleep(500);
+                
+                // 特性：相手をスタンさせたとき、相手全体に25%でスタン付与
+                if (mainStunned && actor.currentHp > 0) {
+                    logMsg(`✨ [特性] ${actor.name}の凍結連鎖！冷気が周りにも広がる！`, "#00ced1");
+                    for (let t of targets) {
+                        if (t.currentHp > 0 && t.uid !== target.uid && Math.random() < 0.25) {
+                            if (t.id === 99) continue;
+                            t.stunTurns = 1;
+                            showFloatingText(t.uid, "スタン!", "#f1c40f");
+                        }
+                    }
+                    await sleep(400);
+                }
+                break;
+                
+            case 19: // 金スライム
+                logMsg(`[${actor.name}]の ${actor.skill}！黄金の光が味方を癒す！`, color);
+                for (let a of allies) {
+                    if (a.currentHp <= 0) continue;
+                    playSkillEffect(a.uid, 'heal');
+                    a.currentHp = Math.min(a.hp, a.currentHp + 20);
+                    showFloatingText(a.uid, `+20`, "#2ecc71");
+                }
                 await sleep(500);
                 break;
 
@@ -1117,6 +1246,16 @@
         if (!battleState.enemy.some(e => e.currentHp > 0)) {
             if (battleState.isEndless) {
                 battleState.endlessWave++;
+                
+                // --- Wave 30 到達報酬 ---
+                if (battleState.endlessWave === 30) {
+                    if (!playerInventory.includes(19)) {
+                        playerInventory.push(19);
+                        saveData();
+                        logMsg(`<br>✨🎉 <b>Wave 30 到達報酬！</b> 「金スライム」をゲットしました！！`, "#f1c40f");
+                    }
+                }
+                
                 logMsg(`<br>⚔️ Wave ${battleState.endlessWave} に突入！敵が現れた！`, "#f1c40f");
                 battleState.enemy = generateEndlessEnemies(battleState.endlessWave);
                 updateBattleUI();
@@ -1160,7 +1299,10 @@
         document.getElementById('btn-battle-end').style.display = 'block'; updateBattleUI();
     }
 
-    window.onload = loadData;
+    window.onload = function() {
+        loadData();
+        initGachaLineup(); // ガチャラインナップの初期生成
+    };
 </script>
 </body>
 </html>
