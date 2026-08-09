@@ -611,7 +611,8 @@
         currentStageId: 1,
         isEndless: false,
         endlessWave: 1,
-        defeatedCount: 0 
+        defeatedCount: 0,
+        isWaveTransitioning: false // 追加：ウェーブ移行中かどうかのフラグ
     };
     let commandQueue = [], currentCommandIndex = 0;
 
@@ -973,6 +974,7 @@
 
         battleState.currentStageId = stageId;
         battleState.isOver = false;
+        battleState.isWaveTransitioning = false; // 初期化時にフラグをリセット
 
         battleState.player = playerDeck.map((id, index) => {
             let pCard = getPlayerCardData(id, false);
@@ -1070,7 +1072,7 @@
     }
 
     function showNextCommandUI() {
-        if(battleState.isOver) return;
+        if(battleState.isOver || battleState.isWaveTransitioning) return;
         while (currentCommandIndex < battleState.player.length && battleState.player[currentCommandIndex].currentHp <= 0) currentCommandIndex++;
         if (currentCommandIndex >= battleState.player.length) {
             document.getElementById('command-area').style.display = 'none'; executeTurn(); return;
@@ -1096,7 +1098,7 @@
         commandQueue.sort(() => Math.random() - 0.5);
 
         for (let cmd of commandQueue) {
-            if (battleState.isOver) break;
+            if (battleState.isOver || battleState.isWaveTransitioning) break; // バトル終了やウェーブ移行が確定したらループを抜ける
             let actor = cmd.actor; if (actor.currentHp <= 0) continue;
 
             if (actor.stunTurns > 0) {
@@ -1108,6 +1110,9 @@
                 await sleep(500);
                 if (actorCard) actorCard.classList.remove('active-turn');
                 updateBattleUI();
+                
+                let shouldBreak = checkWinLoss();
+                if (shouldBreak) break;
                 continue;
             }
 
@@ -1171,10 +1176,16 @@
             }
 
             if (actorCard) actorCard.classList.remove('active-turn');
-            updateBattleUI(); checkWinLoss(); await sleep(500);
+            updateBattleUI(); 
+            
+            let shouldBreak = checkWinLoss(); // trueが返ってきたら勝敗決着orウェーブ移行
+            if (shouldBreak) break;
+            
+            await sleep(500);
         }
 
-        if (!battleState.isOver) {
+        // ウェーブ移行中やゲーム終了になっていなければターン終了処理を実行
+        if (!battleState.isOver && !battleState.isWaveTransitioning) {
             [...battleState.player, ...battleState.enemy].forEach(c => {
                 if (c.cooldown > 0) c.cooldown--;
                 
@@ -1212,8 +1223,14 @@
                 }
             });
             updateBattleUI(); 
-            checkWinLoss();
-            if (!battleState.isOver) { await sleep(400); startCommandPhase(); }
+            
+            // 毒などのターン終了ダメージで敵や味方が死んだ場合のチェック
+            let shouldBreakEnd = checkWinLoss();
+            
+            if (!battleState.isOver && !battleState.isWaveTransitioning && !shouldBreakEnd) { 
+                await sleep(400); 
+                startCommandPhase(); 
+            }
         }
     }
 
@@ -1524,6 +1541,7 @@
         }
     }
 
+    // 戻り値でループ(ターン進行)を停止するかどうかを返すように変更
     function checkWinLoss() {
         let playerAlive = battleState.player.some(p => p.currentHp > 0);
         let enemyAlive = battleState.enemy.some(e => e.currentHp > 0);
@@ -1538,8 +1556,10 @@
                 submitRanking(playerName, finalWave);
             }
             document.getElementById('btn-battle-end').style.display = 'block';
+            return true;
         } else if (!enemyAlive) {
             if (battleState.isEndless) {
+                battleState.isWaveTransitioning = true; // ウェーブ移行中フラグを立てる
                 battleState.defeatedCount += battleState.enemy.length;
                 battleState.endlessWave++;
                 logMsg(`🎉 Wave ${battleState.endlessWave - 1} クリア！次のWaveへ進みます！`, "#2ecc71");
@@ -1554,7 +1574,7 @@
                 
                 playerCoins += 150 * (battleState.endlessWave - 1);
                 
-                // パンチングスライムの特性 (敵死亡ごとにCT1短縮) ※エンドレスの全体勝利時にも便宜上チェック
+                // パンチングスライムの特性 (敵死亡ごとにCT1短縮)
                 battleState.player.forEach(p => {
                     if (p.id === 20 && p.currentHp > 0) {
                         for(let i=0; i<battleState.enemy.length; i++) {
@@ -1563,10 +1583,17 @@
                     }
                 });
                 saveData();
-
-                battleState.enemy = generateEndlessEnemies(battleState.endlessWave);
                 updateBattleUI();
-                startCommandPhase();
+
+                // 1.5秒遅延させて、メッセージやアニメーションを見る時間を作る
+                setTimeout(() => {
+                    battleState.enemy = generateEndlessEnemies(battleState.endlessWave);
+                    updateBattleUI();
+                    battleState.isWaveTransitioning = false; // フラグ解除
+                    startCommandPhase();
+                }, 1500);
+                
+                return true; // ターン処理を停止
             } else {
                 battleState.isOver = true;
                 document.getElementById('command-area').style.display = 'none';
@@ -1580,9 +1607,10 @@
                 
                 saveData();
                 document.getElementById('btn-battle-end').style.display = 'block';
+                return true;
             }
         } else {
-             // 敵が死んだ際のパンチングスライム特性チェック（戦闘中）
+             // 戦闘中の敵死亡特性チェック
              battleState.enemy.forEach(e => {
                 if (e.currentHp <= 0 && !e.isDeadProcessed) {
                     e.isDeadProcessed = true;
@@ -1594,6 +1622,7 @@
                     });
                 }
             });
+            return false;
         }
     }
 
