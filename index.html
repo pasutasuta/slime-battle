@@ -21,17 +21,22 @@
       min-height: 100vh;
       flex-direction: column;
     }
+    /* スマホ画面に合わせて自動リサイズされるように修正 */
     #game-container {
       position: relative;
-      width: 800px;
-      height: 450px;
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 16 / 9;
       box-shadow: 0 0 30px rgba(0,255,255,0.3);
       overflow: hidden;
       border-radius: 8px;
     }
     canvas {
       display: block;
+      width: 100%;
+      height: 100%;
       background: #101426;
+      touch-action: none; /* スマホでのスクロールやズームを防止 */
     }
     .screen {
       position: absolute;
@@ -120,6 +125,7 @@
 <body>
 
 <div id="game-container">
+  <!-- キャンバスの内部解像度は800x450のまま固定（見た目だけCSSで縮小・拡大される） -->
   <canvas id="canvas" width="800" height="450"></canvas>
 
   <div id="hud" class="hidden">
@@ -155,8 +161,8 @@ const THRUST = -0.85;
 const FLOOR_Y = 370;
 const CEILING_Y = 0;
 const STAGE_DURATION_SEC = 90;
-const FIXED_SPEED = 4.0;
-const TOTAL_DISTANCE = STAGE_DURATION_SEC * 60 * FIXED_SPEED; // 全長 21,600px
+const FIXED_SPEED = 8.0; // スクロール速度を2倍(4.0 -> 8.0)に変更
+const TOTAL_DISTANCE = STAGE_DURATION_SEC * 60 * FIXED_SPEED; // 全長 43,200px
 
 const BGM_STAGE_1 = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
 const BGM_STAGE_2 = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3');
@@ -172,6 +178,11 @@ let startTime = 0;
 let cameraX = 0;
 let isHolding = false;
 let coinsCollected = 0;
+
+// === スピード固定用の変数を追加 ===
+let lastTime = 0;
+let accumulator = 0;
+const TIME_STEP = 1000 / 60; // 60FPS（約16.66ms）に固定
 
 const player = {
   x: 150,
@@ -430,6 +441,10 @@ function startGame(stageId) {
   cameraX = 0;
   startTime = performance.now();
 
+  // === 時間管理用の変数をリセット ===
+  lastTime = performance.now();
+  accumulator = 0;
+
   buildFullStage(stageId);
 
   if (currentAudio) currentAudio.pause();
@@ -458,9 +473,28 @@ function showMenu() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function gameLoop() {
+// === 端末による速度差をなくす新しいゲームループ ===
+function gameLoop(timestamp) {
   if (gameState !== 'PLAYING') return;
-  update();
+
+  // timestampが未定義の場合は補完
+  if (!timestamp) timestamp = performance.now();
+
+  // 前回フレームからの経過時間を計算
+  let deltaTime = timestamp - lastTime;
+  lastTime = timestamp;
+
+  // タブ切り替え等で時間が開きすぎた場合のワープ（異常挙動）を防ぐ上限値
+  if (deltaTime > 100) deltaTime = 100;
+
+  accumulator += deltaTime;
+
+  // 16.66ms（60FPS）溜まるごとに、PC版と同じスピードで1回分の処理を進める
+  while (accumulator >= TIME_STEP) {
+    update();
+    accumulator -= TIME_STEP;
+  }
+
   draw();
   requestAnimationFrame(gameLoop);
 }
