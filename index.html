@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スライムカードバトル Ver15 - 混乱スライム＆結晶スライム参戦</title>
+<title>スライムカードバトル Ver17 - 神殿スライム＆ストーリー追加</title>
 <style>
     /* 全画面スタイル */
     body {
@@ -182,6 +182,42 @@
     .ranking-rank { font-weight: bold; width: 50px; text-align: center; color: #7f8c8d; }
     .ranking-name { flex: 1; font-weight: bold; color: #2c3e50; margin-left: 10px; font-size: 15px; display: flex; align-items: center; }
     .ranking-wave { font-weight: bold; color: #e74c3c; font-size: 16px; }
+
+    /* ストーリー画面用スタイル */
+    .story-box {
+        background: #1a252f;
+        color: #fff;
+        border: 3px solid #f1c40f;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 500px;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        cursor: pointer;
+    }
+    .story-speaker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid #34495e;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+    }
+    .story-speaker-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #f1c40f;
+    }
+    .story-text-content {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #ecf0f1;
+        min-height: 90px;
+    }
 </style>
 </head>
 <body>
@@ -200,6 +236,9 @@
         <div class="center-container">
             <div class="coin-header">🪙 <span class="coin-val">0</span> 枚 ｜ 🏖️ <span class="summer-coin-val">0</span> 枚</div>
         </div>
+
+        <button onclick="initPlazaScreen()" style="background-color: #e84393; border: 2px solid #fd79a8;">🌸 スライム広場へ行く</button>
+        <button onclick="initStorySelectScreen()" style="background-color: #e67e22; border: 2px solid #d35400;">📖 ストーリーモード</button>
 
         <div style="display: flex; justify-content: center; gap: 10px; width: 80%; max-width: 400px; margin: 10px auto;">
             <button id="btn-buy-punching" onclick="buySlime(20, 20000)" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; background-color: #d35400;">🥊 パンチング<br>(20000🪙)</button>
@@ -223,6 +262,48 @@
         <button onclick="initLevelUpScreen()" style="background-color: #27ae60; border: 2px solid #2ecc71;">🔼 レベルアップ</button>
         <button onclick="initBookScreen()" style="background-color: #8e44ad;">📖 スライム図鑑</button>
         <button onclick="resetData()" style="background-color: #e74c3c; width: 40%; font-size: 12px; padding: 8px; margin-top: 30px;">⚠️ データ初期化</button>
+    </div>
+
+    <!-- スライム広場画面 -->
+    <div id="screen-plaza" class="screen">
+        <h2>🌸 スライム広場</h2>
+        <div class="center-container">
+            <div class="coin-header" style="background-color: #ff793f; color: #fff;">🖱️ <span id="click-coin-val">0</span> クリックコイン</div>
+        </div>
+        <p style="text-align:center; font-size:13px; margin-bottom: 10px;">
+            上から降ってくるコインをタップして集めよう！<br>1000コインで限定スライムと交換！
+        </p>
+        
+        <div id="plaza-click-area" style="width: 100%; max-width: 400px; height: 260px; background: #ffeaa7; margin: 10px auto; border-radius: 12px; position: relative; overflow: hidden; border: 3px solid #fdcb6e; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);">
+            <!-- 動的に降ってくるコインがここに出現 -->
+        </div>
+
+        <button id="btn-buy-rose" onclick="buyRoseSlime()" style="background-color: #e84393; border: 2px solid #d63031;">🌹 ローズスライムと交換 (1000コイン)</button>
+        <button class="back-btn" onclick="leavePlazaScreen()">ホームに戻る</button>
+    </div>
+
+    <!-- ストーリー選択画面 -->
+    <div id="screen-story-select" class="screen">
+        <h2>📖 ストーリーモード</h2>
+        <p style="text-align:center; font-weight:bold; color:#e67e22;">〜 団子スライム救出大作戦 〜</p>
+        <div id="story-list" style="display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 400px; margin: 0 auto;"></div>
+        <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
+    </div>
+
+    <!-- ストーリー閲覧画面 (ノベル形式) -->
+    <div id="screen-story-view" class="screen">
+        <h2 id="story-title-header">ストーリー</h2>
+        <div class="story-box" onclick="nextStoryText()">
+            <div>
+                <div class="story-speaker">
+                    <span id="story-speaker-icon" style="font-size: 24px;">💬</span>
+                    <span id="story-speaker-name" class="story-speaker-name">スライム</span>
+                </div>
+                <div id="story-text" class="story-text-content">…</div>
+            </div>
+            <div style="text-align: right; font-size: 12px; color: #f1c40f; font-weight: bold;">タップで進む ▶</div>
+        </div>
+        <button class="back-btn" onclick="changeScreen('screen-story-select')">中断する</button>
     </div>
 
     <!-- ランキング画面 -->
@@ -258,7 +339,7 @@
         <h2>スライムレベルアップ</h2>
         <div class="center-container"><div class="coin-header">🪙 <span class="coin-val">0</span> 枚</div></div>
         <p style="text-align:center; font-size:13px; margin-bottom: 20px;">
-            コインを消費してスライムのレベルを上げます！<br>【 最大Lv: 30 / 効果: 1LvにつきHP+1 ｜ 10LvごとにATK+3 】
+            コインを消費してスライムのレベルを上げます！<br>【 最大Lv: 30 / 効果: 1LvにつきHP+1(メタル等除く) ｜ 10LvごとにATK+3 】
         </p>
         <div id="levelup-list" class="card-container"></div>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
@@ -266,14 +347,20 @@
 
     <div id="screen-craft" class="screen">
         <h2>スライム合成</h2>
-        <div style="text-align:center; margin-bottom: 20px;">
-            <p>特定の素材スライムを消費して<br>強力なスライムを生み出します！</p>
-            <div style="background: #fff; padding: 15px; border-radius: 8px; border: 2px dashed #95a5a6; display: inline-block; margin-top: 10px;">
-                <h3 style="margin: 0 0 10px 0; color: #8e44ad;">レシピ: 究極の光闇</h3>
-                <span style="color:#f1c40f; font-weight:bold;">光スライム</span> ➕ <span style="color:#2c3e50; font-weight:bold;">闇スライム</span><br>⬇️<br><b style="font-size: 18px;">光闇スライム</b>
+        <p style="text-align:center; margin-bottom: 15px;">特定の素材スライムを消費して<br>強力なスライムを生み出します！</p>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <div style="background: #fff; padding: 15px; border-radius: 8px; border: 2px dashed #95a5a6; text-align: center; width: 80%; max-width: 350px;">
+                <h3 style="margin: 0 0 10px 0; color: #8e44ad;">レシピ1: 究極の光闇</h3>
+                <span style="color:#f1c40f; font-weight:bold;">光スライム</span> ➕ <span style="color:#2c3e50; font-weight:bold;">闇スライム</span><br>⬇️<br><b style="font-size: 18px;">光闇スライム</b><br>
+                <button onclick="craftLightDark()" style="background-color: #8e44ad; width: 100%; margin-top: 10px;">合成を実行する</button>
+            </div>
+
+            <div style="background: #fff; padding: 15px; border-radius: 8px; border: 2px dashed #00bfff; text-align: center; width: 80%; max-width: 350px;">
+                <h3 style="margin: 0 0 10px 0; color: #00bfff;">レシピ2: 夏の結晶</h3>
+                <span style="color:#00ced1; font-weight:bold;">サマースライム</span> ➕ <span style="color:#20b2aa; font-weight:bold;">結晶を食べるスライム</span><br>⬇️<br><b style="font-size: 18px;">夏の結晶スライム</b><br>
+                <button onclick="craftSummerCrystal()" style="background-color: #00bfff; width: 100%; margin-top: 10px;">合成を実行する</button>
             </div>
         </div>
-        <button onclick="craftLightDark()" style="background-color: #8e44ad;">合成を実行する</button>
         <button class="back-btn" onclick="changeScreen('screen-home')">戻る</button>
     </div>
 
@@ -323,6 +410,7 @@
         <div class="battle-area"><p>PLAYER</p><div id="player-battle-cards" class="battle-cards"></div></div>
         <div id="battle-log"></div>
         <button id="btn-battle-end" class="back-btn" onclick="changeScreen('screen-home')" style="display:none; margin-bottom:50px;">ホームに戻る</button>
+        <button id="btn-story-back" class="back-btn" onclick="changeScreen('screen-story-select')" style="display:none; margin-bottom:50px; background-color:#e67e22;">ストーリー選択に戻る</button>
     </div>
 
     <div id="command-area">
@@ -361,7 +449,226 @@
         { id: 20, name: "パンチングスライム", hp: 75, atk: 26, skill: "ビルドパンチ", skillDesc: "味方全体ATK+2＆相手1体に固定50ダメ", trait: "加速ステップ", traitDesc: "敵の誰かが死亡毎に技CT1短縮", rarity: "UR", color: "#d35400", scale: 1.2, imageURL: "", gachaRate: 0 },
         { id: 21, name: "混乱スライム", hp: 90, atk: 2, skill: "パニックボイス", skillDesc: "相手1体に混乱を付与(2T)", trait: "混乱吸収", traitDesc: "混乱付与時に自身のHP25回復", rarity: "UR", color: "#e84393", scale: 1.1, imageURL: "", gachaRate: 0.44 },
         { id: 22, name: "結晶を食べるスライム", hp: 70, atk: 15, skill: "クリスタルブレイク", skillDesc: "全体最大HP-5&1体にダメ&70%スタン", trait: "結晶浸食", traitDesc: "最大HP減少時に対象へ10固定ダメ", rarity: "EX", color: "#20b2aa", scale: 1.1, imageURL: "", gachaRate: 0 },
-        { id: 99, name: "魔王スライム", hp: 800, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
+        { id: 23, name: "団子スライム", hp: 60, atk: 14, skill: "三色団子", skillDesc: "味方全体のHPを15回復", trait: "モチモチボディ", traitDesc: "受けるダメージ常に-3", rarity: "EX", color: "#ffb6c1", scale: 1.0, imageURL: "", gachaRate: 0 },
+        { id: 24, name: "夏の結晶スライム", hp: 60, atk: 20, skill: "クリスタルサマー", skillDesc: "全体固定5ダメ＆ランダム5回固定15ダメ", trait: "結晶回復", traitDesc: "固定ダメージを与えるたびHP3回復", rarity: "UR", color: "#00bfff", scale: 1.2, imageURL: "", gachaRate: 0 },
+        { id: 25, name: "ローズスライム", hp: 66, atk: 12, skill: "ローズソーン", skillDesc: "単体小ダメ＆ランダム3回小ダメ", trait: "棘の反撃", traitDesc: "ダメージを食らうたびにATK+2", rarity: "UR", color: "#ff1493", scale: 1.1, imageURL: "", gachaRate: 0 },
+        { id: 26, name: "神殿スライム", hp: 7, atk: 1, skill: "セイントプロテクト", skillDesc: "味方全体のHPを10回復し、相手全体に50％でスタン付与", trait: "神殿の加護", traitDesc: "敵から食らうダメージを90％半減", rarity: "EX", color: "#d4af37", scale: 1.2, imageURL: "", gachaRate: 0 },
+        { id: 99, name: "魔王スライム", hp: 500, atk: 15, skill: "終焉の波動", skillDesc: "全体に強力なダメージ", trait: "魔王の威厳", traitDesc: "毎ターンHP15回復＆状態異常無効", rarity: "BOSS", color: "#111", scale: 1.8, imageURL: "", gachaRate: 0 }
+    ];
+
+    // --- ストーリーデータベース（ステージ1～20） ---
+    const STORY_DB = [
+        {
+            id: 1,
+            title: "ストーリー1: 団子スライム失踪！",
+            reward: 300,
+            enemies: [1, 1],
+            dialogue: [
+                { speaker: "緑スライム", icon: "🟢", text: "大変だ！大変だーーっ！" },
+                { speaker: "赤スライム", icon: "🔴", text: "どうしたんだ急に大声出して？" },
+                { speaker: "緑スライム", icon: "🟢", text: "村のアイドル『団子スライム』ちゃんが、魔王の配下にさらわれちゃったんだ！" },
+                { speaker: "青スライム", icon: "🔵", text: "なんですって！？あのモチモチで可愛らしい団子スライムちゃんが！？" },
+                { speaker: "赤スライム", icon: "🔴", text: "許せねぇ！おいお前たち、団子スライムを救出しに旅立つぞ！" },
+                { speaker: "緑スライム", icon: "🟢", text: "あっ！手始めに魔王の手先が襲ってきたぞ！応戦だ！" }
+            ]
+        },
+        {
+            id: 2,
+            title: "ストーリー2: 旅立ちの森",
+            reward: 400,
+            enemies: [2, 1, 2],
+            dialogue: [
+                { speaker: "青スライム", icon: "🔵", text: "ふぅ、なんとか追手を追い払ったわね。" },
+                { speaker: "赤スライム", icon: "🔴", text: "森の奥に怪しい足跡が残ってる。団子スライムはこの先だ！" },
+                { speaker: "赤スライム(敵)", icon: "👿", text: "ここから先は通さんゾ！" }
+            ]
+        },
+        {
+            id: 3,
+            title: "ストーリー3: 火山のあやしい影",
+            reward: 500,
+            enemies: [2, 2, 4],
+            dialogue: [
+                { speaker: "赤スライム", icon: "🔴", text: "あつ〜〜い！火山のふもとまで逃げ込まれたか！" },
+                { speaker: "硬いスライム", icon: "🛡️", text: "カチカチ…我らの防衛線を破れるかな？" },
+                { speaker: "緑スライム", icon: "🟢", text: "団子スライムちゃんのために負けられない！" }
+            ]
+        },
+        {
+            id: 4,
+            title: "ストーリー4: 毒の沼地",
+            reward: 600,
+            enemies: [5, 5],
+            dialogue: [
+                { speaker: "毒スライム", icon: "☠️", text: "ヒヒヒ…よくここまで来たねぇ。だが毒の沼で命を落とすことになるよ！" },
+                { speaker: "青スライム", icon: "🔵", text: "くっ、息苦しい…！でも諦めないわ！" }
+            ]
+        },
+        {
+            id: 5,
+            title: "ストーリー5: 救出の手がかり",
+            reward: 800,
+            enemies: [4, 6],
+            dialogue: [
+                { speaker: "キングスライム", icon: "👑", text: "ドスーン！わしを倒さねば魔王城へ行くための鍵は渡さん！" },
+                { speaker: "赤スライム", icon: "🔴", text: "でけぇ！だが団子スライムを助けるためならキングだってぶっ飛ばす！" }
+            ]
+        },
+        {
+            id: 6,
+            title: "ストーリー6: 凍てつく氷洞",
+            reward: 1000,
+            enemies: [18, 3],
+            dialogue: [
+                { speaker: "アイススライム", icon: "❄️", text: "カチコチに凍らせてあげる〜！" },
+                { speaker: "赤スライム", icon: "🔴", text: "さっきは熱くて今度は寒い！俺の炎で溶かしてやるぜ！" }
+            ]
+        },
+        {
+            id: 7,
+            title: "ストーリー7: 宇宙からの刺客",
+            reward: 1200,
+            enemies: [9, 7],
+            dialogue: [
+                { speaker: "ギャラクシースライム", icon: "🌌", text: "虚無の彼方へ消え去るがよい…" },
+                { speaker: "緑スライム", icon: "🟢", text: "なんだかすごいオーラだ…！みんな、力を合わせよう！" }
+            ]
+        },
+        {
+            id: 8,
+            title: "ストーリー8: 魔王城の門番",
+            reward: 1500,
+            enemies: [10, 20],
+            dialogue: [
+                { speaker: "メテオスライム", icon: "☄️", text: "ここが魔王城の入り口だ！一歩も通さん！" },
+                { speaker: "パンチングスライム", icon: "🥊", text: "オラオラ！拳で語り合おうぜ！" },
+                { speaker: "赤スライム", icon: "🔴", text: "団子スライムはもうすぐそこだ！ぶち破るぞ！" }
+            ]
+        },
+        {
+            id: 9,
+            title: "ストーリー9: 団子スライムの叫び",
+            reward: 2000,
+            enemies: [21, 22, 15],
+            dialogue: [
+                { speaker: "団子スライム", icon: "🍡", text: "きゃーーっ！助けてーー！食べられちゃうーー！" },
+                { speaker: "混乱スライム", icon: "🌀", text: "ウヒヒ！パニックになあれ！" },
+                { speaker: "青スライム", icon: "🔵", text: "団子スライムちゃん！今助けるわよ！" }
+            ]
+        },
+        {
+            id: 10,
+            title: "ストーリー10: 決戦！魔王スライム",
+            reward: 5000,
+            enemies: [99],
+            dialogue: [
+                { speaker: "魔王スライム", icon: "💀", text: "フハハハ！よくぞここまで辿り着いたな…！だが団子スライムのエネルギーは我のモノだ！" },
+                { speaker: "団子スライム", icon: "🍡", text: "みんな…！私に力を貸して！" },
+                { speaker: "赤スライム", icon: "🔴", text: "これが最後の戦いだ！団子スライムを取り戻すぞーーー！！" }
+            ]
+        },
+        {
+            id: 11,
+            title: "ストーリー11: 隠された神殿の扉",
+            reward: 600,
+            enemies: [11, 12],
+            dialogue: [
+                { speaker: "赤スライム", icon: "🔴", text: "魔王を倒したはずなのに、なんだこの古代の扉は！？" },
+                { speaker: "緑スライム", icon: "🟢", text: "奥から強大な聖なる気配を感じるよ…" },
+                { speaker: "光スライム", icon: "✨", text: "ここから先へ進むには、我らの試練を越える必要がある。" }
+            ]
+        },
+        {
+            id: 12,
+            title: "ストーリー12: 光と闇の試練",
+            reward: 700,
+            enemies: [11, 12, 1],
+            dialogue: [
+                { speaker: "闇スライム", icon: "🌑", text: "光と闇のバランスを試してやろう。" },
+                { speaker: "青スライム", icon: "🔵", text: "手加減なしみたいね、迎撃するわよ！" }
+            ]
+        },
+        {
+            id: 13,
+            title: "ストーリー13: 迷宮のガーディアン",
+            reward: 800,
+            enemies: [4, 14],
+            dialogue: [
+                { speaker: "海水スライム", icon: "🌊", text: "神殿を守る者として、お前たちの実力を測らせてもらう！" },
+                { speaker: "赤スライム", icon: "🔴", text: "面白れぇ、まとめて相手になってやるぜ！" }
+            ]
+        },
+        {
+            id: 14,
+            title: "ストーリー14: 幻惑の回廊",
+            reward: 900,
+            enemies: [21, 5],
+            dialogue: [
+                { speaker: "混乱スライム", icon: "🌀", text: "クスクス…神殿の幻惑に迷うがいいさ！" },
+                { speaker: "緑スライム", icon: "🟢", text: "うわぁ、頭がくらくらするよ〜しっかりしなきゃ！" }
+            ]
+        },
+        {
+            id: 15,
+            title: "ストーリー15: 水晶の守護者",
+            reward: 1000,
+            enemies: [22, 18],
+            dialogue: [
+                { speaker: "結晶を食べるスライム", icon: "💎", text: "神殿の魔力を喰らう者よ…お前たちはここで終わりだ。" },
+                { speaker: "青スライム", icon: "🔵", text: "負けるわけにいかないわ！連携攻撃よ！" }
+            ]
+        },
+        {
+            id: 16,
+            title: "ストーリー16: 激震の聖域",
+            reward: 1200,
+            enemies: [20, 6],
+            dialogue: [
+                { speaker: "パンチングスライム", icon: "🥊", text: "ここから先は神聖な領域だ、拳で押し通らせてもらう！" },
+                { speaker: "赤スライム", icon: "🔴", text: "上等だ！こっちだって全力で行くぞ！" }
+            ]
+        },
+        {
+            id: 17,
+            title: "ストーリー17: 混沌を統べる者",
+            reward: 1500,
+            enemies: [13, 9],
+            dialogue: [
+                { speaker: "光闇スライム", icon: "☯️", text: "すべての混沌を超えた先にある真実を見せる時。" },
+                { speaker: "緑スライム", icon: "🟢", text: "すごいプレッシャーだ…みんな、散らばらないで！" }
+            ]
+        },
+        {
+            id: 18,
+            title: "ストーリー18: 神殿の深部",
+            reward: 1800,
+            enemies: [24, 15],
+            dialogue: [
+                { speaker: "夏の結晶スライム", icon: "🏖️", text: "神殿の奥底へようこそ。熱さと冷たさの極地を味わえ！" },
+                { speaker: "青スライム", icon: "🔵", text: "いよいよ神殿の核心に近づいてきたわね。" }
+            ]
+        },
+        {
+            id: 19,
+            title: "ストーリー19: 覚醒の守護神",
+            reward: 2200,
+            enemies: [10, 25],
+            dialogue: [
+                { speaker: "ローズスライム", icon: "🌹", text: "美しき茨の試練を乗り越えられるかしら？" },
+                { speaker: "赤スライム", icon: "🔴", text: "次が最後だ！気合を入れていくぞー！！" }
+            ]
+        },
+        {
+            id: 20,
+            title: "ストーリー20: 降臨！神殿スライム",
+            reward: 1000,
+            enemies: [26],
+            dialogue: [
+                { speaker: "神殿スライム", icon: "✨", text: "我こそは神殿の守護神。よくぞここまで辿り着いた勇者たちよ！我が力を試すがいい！" },
+                { speaker: "団子スライム", icon: "🍡", text: "みんな、頑張って！あのスライムを倒せばすごいことが起きるはず！" },
+                { speaker: "赤スライム", icon: "🔴", text: "よっしゃあ！神殿スライムをぶっ倒して仲間にしてやるぜ！！" }
+            ]
+        }
     ];
 
     const STAGES = {
@@ -369,7 +676,7 @@
         2: { enemies: [2, 2, 4], reward: 200, isEvent: false },
         3: { enemies: [6, 5, 7], reward: 500, isEvent: false },
         4: { enemies: [8, 3, 8], reward: 300, isEvent: true },
-        5: { enemies: [99], reward: 1500, isEvent: false }
+        5: { enemies: [99], reward: 3000, isEvent: false }
     };
 
     const SAVE_KEY = "slime_card_game_data";
@@ -378,8 +685,10 @@
     let playerDeck = [1, 2, 3];
     let playerCoins = 200;
     let playerSummerCoins = 0;
+    let playerClickCoins = 0;
     let playerAwakened = []; 
     let playerLevels = {};
+    let storyProgress = 1;
 
     function saveData() {
         localStorage.setItem(SAVE_KEY, JSON.stringify({ 
@@ -387,9 +696,11 @@
             deck: playerDeck, 
             coins: playerCoins,
             summerCoins: playerSummerCoins,
+            clickCoins: playerClickCoins,
             awakened: playerAwakened,
             levels: playerLevels,
-            playerName: playerName
+            playerName: playerName,
+            storyProgress: storyProgress
         }));
         updateCoinDisplay();
         updateShopButtons();
@@ -407,9 +718,11 @@
                 playerDeck = data.deck || [1, 2, 3];
                 playerCoins = (data.coins !== undefined) ? data.coins : 200;
                 playerSummerCoins = (data.summerCoins !== undefined) ? data.summerCoins : 0;
+                playerClickCoins = (data.clickCoins !== undefined) ? data.clickCoins : 0;
                 playerAwakened = data.awakened || [];
                 playerLevels = data.levels || {};
                 playerName = data.playerName || "名無しスライム";
+                storyProgress = data.storyProgress || 1;
             } catch(e) {}
         }
         updateCoinDisplay();
@@ -434,7 +747,103 @@
     }
 
     // ==========================================
-    // 本格オンラインランキングAPI通信処理 (KVDB利用)
+    // スライム広場（クリックミニゲーム）制御処理
+    // ==========================================
+    let plazaInterval = null;
+
+    function initPlazaScreen() {
+        changeScreen('screen-plaza');
+        updatePlazaUI();
+        startCoinSpawning();
+    }
+
+    function leavePlazaScreen() {
+        stopCoinSpawning();
+        changeScreen('screen-home');
+    }
+
+    function updatePlazaUI() {
+        document.getElementById('click-coin-val').innerText = playerClickCoins;
+        const btnRose = document.getElementById('btn-buy-rose');
+        if (playerInventory.includes(25)) {
+            btnRose.innerText = "🌹 ローズスライム (交換済み)";
+            btnRose.disabled = true;
+        } else {
+            btnRose.innerText = "🌹 ローズスライムと交換 (1000コイン)";
+            btnRose.disabled = false;
+        }
+    }
+
+    function startCoinSpawning() {
+        stopCoinSpawning();
+        const area = document.getElementById('plaza-click-area');
+        area.innerHTML = '';
+        plazaInterval = setInterval(() => {
+            spawnFallingCoin();
+        }, 650);
+    }
+
+    function stopCoinSpawning() {
+        if (plazaInterval) clearInterval(plazaInterval);
+        plazaInterval = null;
+    }
+
+    function spawnFallingCoin() {
+        const area = document.getElementById('plaza-click-area');
+        if (!area) return;
+        
+        const coin = document.createElement('div');
+        coin.innerText = "🪙";
+        coin.style.position = "absolute";
+        coin.style.fontSize = "28px";
+        coin.style.cursor = "pointer";
+        coin.style.userSelect = "none";
+        coin.style.left = Math.floor(Math.random() * 85) + "%";
+        coin.style.top = "-40px";
+        coin.style.transition = "top 2.8s linear";
+        
+        coin.onclick = (e) => {
+            e.stopPropagation();
+            playerClickCoins++;
+            saveData();
+            updatePlazaUI();
+            showFloatingAtEvent(e.clientX, e.clientY, "+1", "#ff007f");
+            coin.remove();
+        };
+        
+        area.appendChild(coin);
+        setTimeout(() => { coin.style.top = "270px"; }, 50);
+        setTimeout(() => { if (coin.parentNode) coin.remove(); }, 2900);
+    }
+
+    function showFloatingAtEvent(x, y, text, color) {
+        const floatEl = document.createElement('div');
+        floatEl.innerText = text;
+        floatEl.style.position = 'fixed';
+        floatEl.style.left = x + 'px';
+        floatEl.style.top = y + 'px';
+        floatEl.style.color = color;
+        floatEl.style.fontWeight = 'bold';
+        floatEl.style.fontSize = '20px';
+        floatEl.style.pointerEvents = 'none';
+        floatEl.style.zIndex = '9999';
+        floatEl.style.animation = 'popText 0.6s ease-out forwards';
+        document.body.appendChild(floatEl);
+        setTimeout(() => floatEl.remove(), 600);
+    }
+
+    function buyRoseSlime() {
+        if (playerInventory.includes(25)) return alert("すでにローズスライムを所持しています！");
+        if (playerClickCoins < 1000) return alert("クリックコインが足りません！ (1000コイン必要)");
+        playerClickCoins -= 1000;
+        playerInventory.push(25);
+        saveData();
+        updatePlazaUI();
+        alert("🎉 ローズスライムを獲得しました！");
+    }
+
+    // ==========================================
+    // オンラインランキングAPI通信処理
     // ==========================================
     const KVDB_BUCKET = "slime_card_battle_global_ranking_2026";
 
@@ -448,8 +857,6 @@
             }
             
             rankingData.push({ name: name, wave: wave, date: Date.now() });
-            
-            // 降順ソート＆上位100件保存
             rankingData.sort((a, b) => b.wave - a.wave);
             rankingData = rankingData.slice(0, 100);
             
@@ -458,10 +865,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(rankingData)
             });
-            console.log("オンラインスコア送信成功:", name, wave);
-        } catch (e) {
-            console.error("オンラインスコアの送信に失敗しました", e);
-        }
+        } catch (e) {}
     }
 
     async function fetchRanking() {
@@ -472,7 +876,6 @@
             if (!text) return [];
             return JSON.parse(text);
         } catch (e) {
-            console.error("オンラインランキングの取得に失敗しました", e);
             throw e;
         }
     }
@@ -485,7 +888,7 @@
         try {
             const data = await fetchRanking();
             if (data.length === 0) {
-                list.innerHTML = "<p style='text-align:center; padding: 20px; color: #555;'>まだ誰もスコアを登録していません。<br>一番乗りを目指そう！</p>";
+                list.innerHTML = "<p style='text-align:center; padding: 20px; color: #555;'>まだ誰もスコアを登録していません。</p>";
                 return;
             }
             
@@ -515,7 +918,7 @@
             });
             list.innerHTML = html;
         } catch(e) {
-            list.innerHTML = "<p style='text-align:center; color:red; padding: 20px;'>通信エラーが発生しました。インターネット接続を確認してください。</p>";
+            list.innerHTML = "<p style='text-align:center; color:red; padding: 20px;'>通信エラーが発生しました。</p>";
         }
     }
 
@@ -527,11 +930,101 @@
             initRankingScreen();
         }
     }
+
+    // ==========================================
+    // ストーリーモード制御処理
+    // ==========================================
+    let currentStoryData = null;
+    let currentDialogueIndex = 0;
+
+    function initStorySelectScreen() {
+        changeScreen('screen-story-select');
+        const list = document.getElementById('story-list');
+        list.innerHTML = "";
+
+        STORY_DB.forEach(story => {
+            let isUnlocked = story.id <= storyProgress;
+            let btnStyle = isUnlocked ? "background-color: #3498db;" : "background-color: #7f8c8d; opacity: 0.6;";
+            let lockIcon = isUnlocked ? "📖" : "🔒";
+            let statusText = story.id < storyProgress ? " 【クリア済み】" : (story.id === storyProgress ? " 【挑戦可能】" : " 【未解放】");
+            let rewardExtra = story.id === 20 && !playerInventory.includes(26) ? " ＋ 神殿スライム報酬!" : "";
+
+            list.innerHTML += `
+                <button onclick="startStory(${story.id})" ${isUnlocked ? '' : 'disabled'} style="${btnStyle} text-align: left; padding: 12px; font-size: 14px;">
+                    ${lockIcon} ${story.title}<br>
+                    <span style="font-size: 11px; font-weight: normal;">報酬: ${story.reward}🪙${rewardExtra}${statusText}</span>
+                </button>
+            `;
+        });
+    }
+
+    function startStory(storyId) {
+        if (playerDeck.length !== 3) return alert("デッキを3枚編成してください！");
+        currentStoryData = STORY_DB.find(s => s.id === storyId);
+        if (!currentStoryData) return;
+
+        currentDialogueIndex = 0;
+        document.getElementById('story-title-header').innerText = currentStoryData.title;
+        changeScreen('screen-story-view');
+        updateDialogueUI();
+    }
+
+    function updateDialogueUI() {
+        if (!currentStoryData) return;
+        let d = currentStoryData.dialogue[currentDialogueIndex];
+        document.getElementById('story-speaker-icon').innerText = d.icon || "💬";
+        document.getElementById('story-speaker-name').innerText = d.speaker;
+        document.getElementById('story-text').innerText = d.text;
+    }
+
+    function nextStoryText() {
+        if (!currentStoryData) return;
+        currentDialogueIndex++;
+        if (currentDialogueIndex < currentStoryData.dialogue.length) {
+            updateDialogueUI();
+        } else {
+            startStoryBattle(currentStoryData);
+        }
+    }
+
+    function startStoryBattle(story) {
+        changeScreen('screen-battle');
+        document.getElementById('btn-battle-end').style.display = 'none';
+        document.getElementById('btn-story-back').style.display = 'none';
+        document.getElementById('battle-log').innerHTML = `<b>【${story.title}】バトル開始！</b><br>`;
+
+        battleState.isStory = true;
+        battleState.currentStory = story;
+        battleState.isOver = false;
+        battleState.isWaveTransitioning = false;
+        battleState.isEndless = false;
+
+        battleState.player = playerDeck.map((id, index) => {
+            let pCard = getPlayerCardData(id, false);
+            return { 
+                ...pCard, 
+                currentHp: pCard.hp, 
+                uid: 'p'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, confusionTurns: 0, hasRevived: false,
+                isAwakened: playerAwakened.includes(id)
+            };
+        });
+
+        battleState.enemy = story.enemies.map((id, index) => ({ 
+            ...CARD_DB.find(c => c.id === id), 
+            currentHp: CARD_DB.find(c => c.id === id).hp, 
+            uid: 'e'+index, isDefending: false, cooldown: 0, voidTurns: 0, stunTurns: 0, confusionTurns: 0, hasRevived: false, isDeadProcessed: false,
+            isAwakened: false
+        }));
+
+        startCommandPhase();
+    }
     // ==========================================
     
     function updateCoinDisplay() {
         document.querySelectorAll('.coin-val').forEach(el => el.innerText = playerCoins);
         document.querySelectorAll('.summer-coin-val').forEach(el => el.innerText = playerSummerCoins);
+        const clickVal = document.getElementById('click-coin-val');
+        if (clickVal) clickVal.innerText = playerClickCoins;
     }
 
     function updateShopButtons() {
@@ -603,6 +1096,23 @@
         changeScreen('screen-home');
     }
 
+    function craftSummerCrystal() {
+        if (!playerInventory.includes(8) || !playerInventory.includes(22)) {
+            return alert("サマースライムと結晶を食べるスライムの両方が必要です！");
+        }
+        if (playerInventory.includes(24)) {
+            return alert("すでに「夏の結晶スライム」を所持しています！");
+        }
+        
+        playerInventory = playerInventory.filter(id => id !== 8 && id !== 22);
+        playerDeck = playerDeck.filter(id => id !== 8 && id !== 22);
+        playerInventory.push(24);
+        saveData();
+        
+        alert("🎉 合成成功！「夏の結晶スライム」を獲得しました！");
+        changeScreen('screen-home');
+    }
+
     let battleState = { 
         player: [], 
         enemy: [], 
@@ -612,11 +1122,14 @@
         isEndless: false,
         endlessWave: 1,
         defeatedCount: 0,
-        isWaveTransitioning: false // 追加：ウェーブ移行中かどうかのフラグ
+        isWaveTransitioning: false,
+        isStory: false,
+        currentStory: null
     };
     let commandQueue = [], currentCommandIndex = 0;
 
     function changeScreen(screenId) {
+        if (screenId !== 'screen-plaza') stopCoinSpawning();
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
         document.getElementById('command-area').style.display = 'none';
@@ -644,6 +1157,10 @@
         if (card.id === 20) crownHtml = `<div class="crown">🥊</div>`;
         if (card.id === 21) crownHtml = `<div class="crown" style="font-size:16px;">🌀</div>`;
         if (card.id === 22) crownHtml = `<div class="crown" style="font-size:16px;">💎</div>`;
+        if (card.id === 23) crownHtml = `<div class="crown" style="font-size:16px;">🍡</div>`;
+        if (card.id === 24) crownHtml = `<div class="crown" style="font-size:16px;">🏖️</div>`;
+        if (card.id === 25) crownHtml = `<div class="crown" style="font-size:16px;">🌹</div>`;
+        if (card.id === 26) crownHtml = `<div class="crown" style="font-size:16px;">✨</div>`;
         if (card.id === 99) crownHtml = `<div class="crown">💀</div>`;
         
         return `
@@ -691,11 +1208,13 @@
         let nameStr = withHtml ? `${baseCard.name} <span style="font-size:10px;">Lv${lvl}</span>` : `${baseCard.name} Lv${lvl}`;
         
         let extraAtk = Math.floor((lvl - 1) / 10) * 3;
+        // メタルスライム(ID: 7)はレベルアップしてもHPが増えない仕様
+        let extraHp = (cardId === 7) ? 0 : (lvl - 1);
 
         return {
             ...baseCard,
             name: nameStr,
-            hp: baseCard.hp + (lvl - 1),
+            hp: baseCard.hp + extraHp,
             atk: baseCard.atk + extraAtk
         };
     }
@@ -766,6 +1285,7 @@
             { id: 3, desc: "通常攻撃が全体攻撃になる！", cost: 3000 },
             { id: 1, desc: "特性の回復量が 5 → 10 に倍増！", cost: 3000 },
             { id: 8, desc: "技の攻撃回数が2倍(10回)になる！", cost: 15000 },
+            { id: 9, desc: "技「ボイドホール」が全体攻撃になる！(虚無付与は単体)", cost: 15000 },
             { id: 15, desc: "通常攻撃時、相手の最大HPを10減らし、自身のHPを5回復する！", cost: 12000 }
         ];
 
@@ -970,11 +1490,13 @@
         if (playerDeck.length !== 3) return alert("デッキを3枚編成してください！");
         changeScreen('screen-battle');
         document.getElementById('btn-battle-end').style.display = 'none';
+        document.getElementById('btn-story-back').style.display = 'none';
         document.getElementById('battle-log').innerHTML = "バトル開始！<br>";
 
+        battleState.isStory = false;
         battleState.currentStageId = stageId;
         battleState.isOver = false;
-        battleState.isWaveTransitioning = false; // 初期化時にフラグをリセット
+        battleState.isWaveTransitioning = false;
 
         battleState.player = playerDeck.map((id, index) => {
             let pCard = getPlayerCardData(id, false);
@@ -1019,14 +1541,12 @@
             let confText = fighter.confusionTurns > 0 ? `<div style="font-size:10px; color:#e84393; font-weight:bold;">🌀 混乱(${fighter.confusionTurns}T)</div>` : '';
             
             let extraStyle = fighter.id === 99 ? 'border: 3px solid #e74c3c; box-shadow: 0 0 10px #e74c3c;' : '';
-            let imageScale = fighter.id === 99 ? 1.0 : 0.8; 
-            
             let awakenMarker = fighter.isAwakened ? `<span style="color:#ff3399; font-size: 14px;">✨</span>` : '';
 
             return `
                 <div class="battle-card ${stateClass}" id="card-${fighter.uid}" style="${extraStyle}">
                     <div style="font-weight:bold;">${fighter.name} ${awakenMarker}</div>
-                    <div class="illustration-box" style="transform: scale(${imageScale}); height: 45px; margin: 10px 0;">
+                    <div class="illustration-box" style="transform: scale(0.8); height: 45px; margin: 10px 0;">
                         ${renderIllustration(fighter)}
                     </div>
                     <div class="hp-bar-bg"><div class="hp-bar-fill" style="width: ${hpPercent}%;"></div></div>
@@ -1098,7 +1618,7 @@
         commandQueue.sort(() => Math.random() - 0.5);
 
         for (let cmd of commandQueue) {
-            if (battleState.isOver || battleState.isWaveTransitioning) break; // バトル終了やウェーブ移行が確定したらループを抜ける
+            if (battleState.isOver || battleState.isWaveTransitioning) break;
             let actor = cmd.actor; if (actor.currentHp <= 0) continue;
 
             if (actor.stunTurns > 0) {
@@ -1120,7 +1640,6 @@
             let targets = cmd.team === 'player' ? battleState.enemy.filter(e=>e.currentHp>0) : battleState.player.filter(p=>p.currentHp>0);
             let allies = cmd.team === 'player' ? battleState.player.filter(p=>p.currentHp>0) : battleState.enemy.filter(e=>e.currentHp>0);
             
-            // 混乱状態の処理
             if (actor.confusionTurns > 0) {
                 actor.confusionTurns--;
                 logMsg(`🌀 ${actor.name} は混乱している！味方に攻撃してしまう！`, "#e84393");
@@ -1178,13 +1697,12 @@
             if (actorCard) actorCard.classList.remove('active-turn');
             updateBattleUI(); 
             
-            let shouldBreak = checkWinLoss(); // trueが返ってきたら勝敗決着orウェーブ移行
+            let shouldBreak = checkWinLoss();
             if (shouldBreak) break;
             
             await sleep(500);
         }
 
-        // ウェーブ移行中やゲーム終了になっていなければターン終了処理を実行
         if (!battleState.isOver && !battleState.isWaveTransitioning) {
             [...battleState.player, ...battleState.enemy].forEach(c => {
                 if (c.cooldown > 0) c.cooldown--;
@@ -1224,7 +1742,6 @@
             });
             updateBattleUI(); 
             
-            // 毒などのターン終了ダメージで敵や味方が死んだ場合のチェック
             let shouldBreakEnd = checkWinLoss();
             
             if (!battleState.isOver && !battleState.isWaveTransitioning && !shouldBreakEnd) { 
@@ -1239,6 +1756,9 @@
         if(attacker.id === 2 && attacker.currentHp <= attacker.hp / 2) dmg = Math.floor(dmg * 1.5);
         if(defender.id === 3) dmg -= 2;
         if(defender.id === 17) dmg -= 1;
+        if(defender.id === 23) dmg -= 3;
+        // 神殿スライム(ID: 26)の特性：敵から食らうダメージを90%半減 (実質10%にする)
+        if(defender.id === 26) dmg = Math.floor(dmg * 0.1);
         if(defender.id === 4 && Math.random() < 0.3) dmg = Math.floor(dmg / 2);
         if(defender.id === 6) dmg = Math.floor(dmg * 0.9);
         if(defender.isDefending) dmg = Math.floor(dmg / 2);
@@ -1250,6 +1770,12 @@
 
     function dealDamage(target, amount) { 
         target.currentHp = Math.max(0, target.currentHp - amount);
+        
+        if (amount > 0 && target.id === 25 && target.currentHp > 0) {
+            target.atk += 2;
+            showFloatingText(target.uid, "ATK+2", "#ff1493");
+            logMsg(`🌹 [特性] ${target.name}のATKが2上昇！`, "#ff1493");
+        }
         
         if (target.currentHp <= 0 && !target.hasRevived) {
             if (target.id === 10) {
@@ -1329,9 +1855,31 @@
                 }
                 break;
             case 9:
-                dmg = calculateDamage(actor, target, actor.atk); dealDamage(target, dmg); playSkillEffect(target.uid, 'void'); showFloatingText(target.uid, `-${dmg}`, "#8e44ad"); await animateHit(target.uid);
-                if(target.id === 99) { showFloatingText(target.uid, "無効!", "#bdc3c7"); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！ だが魔王の威厳で状態異常は無効化された！`, "#8e44ad"); } else {
-                    target.voidTurns = 3; showFloatingText(target.uid, "虚無付与!", "#9b59b6"); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ＆3ターンの虚無状態を付与！`, "#8e44ad"); } break;
+                if (actor.isAwakened) {
+                    shakeScreen();
+                    logMsg(`✨ [覚醒] [${actor.name}]の ${actor.skill}！全体攻撃！`, color);
+                    for (let t of targets) {
+                        playSkillEffect(t.uid, 'void');
+                        let d = calculateDamage(actor, t, actor.atk);
+                        dealDamage(t, d);
+                        showFloatingText(t.uid, `-${d}`, "#8e44ad");
+                        animateHit(t.uid);
+                    }
+                    await sleep(400);
+                    if (target.id === 99) {
+                        showFloatingText(target.uid, "無効!", "#bdc3c7");
+                        logMsg(`${target.name}は魔王の威厳で状態異常は無効化された！`, "#8e44ad");
+                    } else if (target.currentHp > 0) {
+                        target.voidTurns = 3;
+                        showFloatingText(target.uid, "虚無付与!", "#9b59b6");
+                        logMsg(`${target.name}に3ターンの虚無状態を付与！`, "#8e44ad");
+                    }
+                } else {
+                    dmg = calculateDamage(actor, target, actor.atk); dealDamage(target, dmg); playSkillEffect(target.uid, 'void'); showFloatingText(target.uid, `-${dmg}`, "#8e44ad"); await animateHit(target.uid);
+                    if(target.id === 99) { showFloatingText(target.uid, "無効!", "#bdc3c7"); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！ だが魔王の威厳で状態異常は無効化された！`, "#8e44ad"); } else {
+                        target.voidTurns = 3; showFloatingText(target.uid, "虚無付与!", "#9b59b6"); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ＆3ターンの虚無状態を付与！`, "#8e44ad"); }
+                }
+                break;
             case 10:
                 shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！隕石が降り注ぐ！`, "#d35400");
                 for (let t of targets) { playSkillEffect(t.uid, 'meteor'); let d = calculateDamage(actor, t, actor.atk * 1.2); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e67e22"); animateHit(t.uid); } await sleep(500); break;
@@ -1369,264 +1917,180 @@
                     a.currentHp = Math.min(a.hp, a.currentHp + 7);
                     showFloatingText(a.uid, `+7`, "#2ecc71");
                 }
-                await sleep(400);
                 for (let t of targets) {
-                    playSkillEffect(t.uid, 'void');
                     if (t.id === 99) {
                         showFloatingText(t.uid, "無効!", "#bdc3c7");
                     } else {
-                        t.voidTurns = 3;
-                        showFloatingText(t.uid, "虚無付与!", "#9b59b6");
+                        t.voidTurns = 3; showFloatingText(t.uid, "虚無付与!", "#9b59b6");
                     }
                 }
-                await sleep(500);
-                break;
+                await sleep(500); break;
             case 14:
-                shakeScreen();
-                logMsg(`[${actor.name}]の ${actor.skill}！波が敵全体を襲う！`, color);
-                let stunCount = 0;
-                for (let t of targets) {
-                    playSkillEffect(t.uid, 'water');
-                    let d = calculateDamage(actor, t, actor.atk * 0.9);
-                    dealDamage(t, d);
-                    showFloatingText(t.uid, `-${d}`, "#00ced1");
-                    animateHit(t.uid);
-                    
-                    if (t.currentHp > 0 && Math.random() < 0.20) {
-                        if (t.id === 99) {
-                            showFloatingText(t.uid, "無効!", "#bdc3c7");
-                        } else {
-                            t.stunTurns = 1;
-                            showFloatingText(t.uid, "スタン!", "#f1c40f");
-                            stunCount++;
-                        }
-                    }
-                }
-                await sleep(500);
-                if (stunCount > 0 && actor.currentHp > 0) {
-                    let heal = 7 * stunCount;
-                    actor.currentHp = Math.min(actor.hp, actor.currentHp + heal);
-                    showFloatingText(actor.uid, `+${heal}`, "#2ecc71");
-                    logMsg(`✨ [特性] ${actor.name}は敵をスタンさせ、HPが ${heal} 回復！`, "#2ecc71");
-                    await sleep(400);
-                }
-                break;
-            case 15:
-                playSkillEffect(target.uid, 'poison');
-                target.hp = Math.max(1, target.hp - 35);
-                if (target.currentHp > target.hp) target.currentHp = target.hp;
-                
-                showFloatingText(target.uid, "最大HP -35", "#9b59b6");
-                await animateHit(target.uid);
-                
-                if (actor.currentHp > 0) {
-                    let healAmt = 20;
-                    actor.currentHp = Math.min(actor.hp, actor.currentHp + healAmt);
-                    showFloatingText(actor.uid, `+${healAmt}`, "#2ecc71");
-                }
-                
-                logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}の最大HPを35減少させ、自身のHPを20回復！`, color);
-                await sleep(500);
-                break;
-
-            case 16:
-            case 17:
-                playSkillEffect(target.uid, 'slash');
-                dmg = calculateDamage(actor, target, actor.atk); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#e74c3c"); await animateHit(target.uid); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}に ${dmg} ダメージ！`, color); break;
-
-            case 18:
-                shakeScreen();
-                logMsg(`[${actor.name}]の ${actor.skill}！冷気が敵を襲う！`, color);
-                let mainStunned = false;
-                for (let t of targets) {
-                    playSkillEffect(t.uid, 'water');
-                    let d = calculateDamage(actor, t, actor.atk * 0.5);
-                    dealDamage(t, d);
-                    showFloatingText(t.uid, `-${d}`, "#00ced1");
-                    animateHit(t.uid);
-                    
-                    if (t.uid === target.uid && t.currentHp > 0 && Math.random() < 0.5) {
-                        if (t.id === 99) {
-                            showFloatingText(t.uid, "無効!", "#bdc3c7");
-                        } else {
-                            t.stunTurns = 1;
-                            showFloatingText(t.uid, "スタン!", "#f1c40f");
-                            mainStunned = true;
-                        }
-                    }
-                }
-                await sleep(500);
-                if (mainStunned && actor.id === 18 && actor.isAwakened) {
-                    if (Math.random() < 0.25) {
-                        logMsg(`✨ [特性] 凍結連鎖発動！追加で全体にスタン付与！`, "#e0ffff");
-                        for (let t of targets) {
-                            if (t.currentHp > 0 && t.id !== 99) {
-                                t.stunTurns = 1;
-                                showFloatingText(t.uid, "連鎖スタン!", "#f1c40f");
-                            }
-                        }
-                        await sleep(400);
-                    }
-                }
-                break;
-            case 20:
-                shakeScreen();
                 logMsg(`[${actor.name}]の ${actor.skill}！`, color);
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'water');
+                    let d = calculateDamage(actor, t, actor.atk); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#00acc1"); animateHit(t.uid);
+                    if (Math.random() < 0.2 && t.id !== 99) { t.stunTurns = 1; showFloatingText(t.uid, "スタン!", "#f1c40f"); logMsg(`${t.name}はスタンした！`, "#f1c40f"); actor.currentHp = Math.min(actor.hp, actor.currentHp + 7); showFloatingText(actor.uid, "+7", "#2ecc71"); }
+                } await sleep(500); break;
+            case 15:
+                playSkillEffect(target.uid, 'darkness');
+                target.hp = Math.max(1, target.hp - 35); if(target.currentHp > target.hp) target.currentHp = target.hp;
+                showFloatingText(target.uid, "最大HP -35", "#8a2be2"); actor.currentHp = Math.min(actor.hp, actor.currentHp + 20); showFloatingText(actor.uid, "+20", "#2ecc71");
+                logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}の最大HPを35減らし、自身のHPを20回復！`, color); await sleep(400); break;
+            case 18:
+                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！全体に冷気！`, color);
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'water'); let d = calculateDamage(actor, t, actor.atk * 0.9); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#e0ffff"); animateHit(t.uid);
+                    if (Math.random() < 0.5 && t.id !== 99) {
+                        t.stunTurns = 1; showFloatingText(t.uid, "スタン!", "#f1c40f"); logMsg(`${t.name}は凍りついてスタンした！`, "#f1c40f");
+                        if (Math.random() < 0.25) {
+                            for(let ot of targets) { if(ot.currentHp > 0 && ot.id !== 99) { ot.stunTurns = 1; showFloatingText(ot.uid, "連鎖スタン!", "#f1c40f"); } }
+                            logMsg(`✨ [特性] 凍結連鎖が発動！`, "#f1c40f");
+                        }
+                    }
+                } await sleep(500); break;
+            case 19:
+                logMsg(`[${actor.name}]の ${actor.skill}！黄金の輝きが味方を包む！`, color);
                 for (let a of allies) {
-                    if (a.currentHp <= 0) continue;
-                    playSkillEffect(a.uid, 'heal');
-                    a.atk += 2;
-                    showFloatingText(a.uid, `ATK+2`, "#e74c3c");
-                }
-                await sleep(400);
-                playSkillEffect(target.uid, 'punch');
-                dealDamage(target, 50);
-                showFloatingText(target.uid, `-50`, "#e74c3c");
-                await animateHit(target.uid);
-                logMsg(`${target.name}に 50 の固定ダメージ！`, color);
-                await sleep(500);
-                break;
+                    playSkillEffect(a.uid, 'heal'); a.currentHp = Math.min(a.hp, a.currentHp + 20); showFloatingText(a.uid, "+20", "#ffd700");
+                } await sleep(500); break;
+            case 20:
+                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！味方全体のATKが上昇＆強烈な一撃！`, color);
+                for (let a of allies) { a.atk += 2; showFloatingText(a.uid, "ATK+2", "#d35400"); }
+                dmg = calculateDamage(actor, target, 50); dealDamage(target, dmg); playSkillEffect(target.uid, 'punch'); showFloatingText(target.uid, `-${dmg}`, "#d35400"); animateHit(target.uid); await sleep(500); break;
             case 21:
                 playSkillEffect(target.uid, 'poison');
-                if (target.id === 99) {
-                    showFloatingText(target.uid, "無効!", "#bdc3c7");
-                    logMsg(`[${actor.name}]の ${actor.skill}！ だが魔王の威厳で無効化された！`, color);
-                } else {
-                    target.confusionTurns = 2;
-                    showFloatingText(target.uid, "混乱付与!", "#e84393");
-                    logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}は混乱してしまった！`, color);
-                    
-                    if (actor.currentHp > 0) {
-                        actor.currentHp = Math.min(actor.hp, actor.currentHp + 25);
-                        showFloatingText(actor.uid, "+25", "#2ecc71");
-                        logMsg(`✨ [特性] ${actor.name}は混乱を付与し、HPが 25 回復！`, "#2ecc71");
-                    }
-                }
-                await sleep(500);
-                break;
+                if (target.id === 99) { showFloatingText(target.uid, "無効!", "#bdc3c7"); logMsg(`${target.name}は状態異常が無効化された！`, "#e84393"); }
+                else { target.confusionTurns = 2; showFloatingText(target.uid, "混乱付与!", "#e84393"); actor.currentHp = Math.min(actor.hp, actor.currentHp + 25); showFloatingText(actor.uid, "+25", "#2ecc71"); logMsg(`[${actor.name}]の ${actor.skill}！ ${target.name}を混乱させ、HP25回復！`, color); } await sleep(400); break;
             case 22:
-                shakeScreen();
-                logMsg(`[${actor.name}]の ${actor.skill}！`, color);
+                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！`, color);
                 for (let t of targets) {
-                    t.hp = Math.max(1, t.hp - 5);
-                    if (t.currentHp > t.hp) t.currentHp = t.hp;
-                    showFloatingText(t.uid, "最大HP -5", "#7fffd4");
-                    
-                    dealDamage(t, 10);
-                    showFloatingText(t.uid, "-10", "#e74c3c");
-                    logMsg(`✨ [特性] 結晶浸食！ ${t.name}に10の固定ダメージ！`, color);
+                    t.hp = Math.max(1, t.hp - 5); if(t.currentHp > t.hp) t.currentHp = t.hp; showFloatingText(t.uid, "最大HP -5", "#20b2aa");
+                    dealDamage(t, 10); showFloatingText(t.uid, "-10", "#20b2aa");
+                    if (Math.random() < 0.7 && t.id !== 99) { t.stunTurns = 1; showFloatingText(t.uid, "スタン!", "#f1c40f"); }
+                } await sleep(500); break;
+            case 23:
+                logMsg(`[${actor.name}]の ${actor.skill}！モチモチパワーで味方全体回復！`, color);
+                for (let a of allies) {
+                    playSkillEffect(a.uid, 'heal'); a.currentHp = Math.min(a.hp, a.currentHp + 15); showFloatingText(a.uid, "+15", "#ffb6c1");
+                } await sleep(500); break;
+            case 24:
+                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！結晶の嵐！`, color);
+                for (let t of targets) { dealDamage(t, 5); showFloatingText(t.uid, "-5", "#00bfff"); actor.currentHp = Math.min(actor.hp, actor.currentHp + 3); showFloatingText(actor.uid, "+3", "#2ecc71"); }
+                for (let i = 0; i < 5; i++) {
+                    let aliveTargets = targets.filter(t => t.currentHp > 0);
+                    if (aliveTargets.length === 0) break;
+                    let randT = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+                    dealDamage(randT, 15); showFloatingText(randT.uid, "-15", "#00bfff"); animateHit(randT.uid);
+                    actor.currentHp = Math.min(actor.hp, actor.currentHp + 3); showFloatingText(actor.uid, "+3", "#2ecc71");
+                    await sleep(150);
+                } await sleep(400); break;
+            case 25:
+                playSkillEffect(target.uid, 'slash');
+                dmg = calculateDamage(actor, target, actor.atk * 0.8); dealDamage(target, dmg); showFloatingText(target.uid, `-${dmg}`, "#ff1493"); animateHit(target.uid);
+                for (let i = 0; i < 3; i++) {
+                    let aliveTargets = targets.filter(t => t.currentHp > 0);
+                    if (aliveTargets.length === 0) break;
+                    let randT = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+                    let d = calculateDamage(actor, randT, 8); dealDamage(randT, d); showFloatingText(randT.uid, `-${d}`, "#ff1493"); animateHit(randT.uid);
+                    await sleep(200);
+                } logMsg(`[${actor.name}]の ${actor.skill}！`, color); await sleep(400); break;
+            case 26:
+                // 神殿スライムの技：味方全体のHPを10回復して、相手全体に50％でスタンを付与
+                logMsg(`[${actor.name}]の ${actor.skill}！神聖な波動が広がる！`, color);
+                for (let a of allies) {
+                    playSkillEffect(a.uid, 'heal');
+                    a.currentHp = Math.min(a.hp, a.currentHp + 10);
+                    showFloatingText(a.uid, `+10`, "#d4af37");
                 }
-                await sleep(400);
-
-                if (target.currentHp > 0) {
-                    playSkillEffect(target.uid, 'slash');
-                    dmg = calculateDamage(actor, target, actor.atk);
-                    dealDamage(target, dmg);
-                    showFloatingText(target.uid, `-${dmg}`, "#e74c3c");
-                    await animateHit(target.uid);
-                    logMsg(`さらに ${target.name}に ${dmg} ダメージ！`, color);
-
-                    if (target.currentHp > 0 && Math.random() < 0.7) {
-                        if (target.id === 99) {
-                            showFloatingText(target.uid, "無効!", "#bdc3c7");
-                        } else {
-                            target.stunTurns = 1;
-                            showFloatingText(target.uid, "スタン!", "#f1c40f");
-                            logMsg(`${target.name}はスタンした！`, color);
-                        }
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'critical');
+                    if (Math.random() < 0.5 && t.id !== 99) {
+                        t.stunTurns = 1;
+                        showFloatingText(t.uid, "スタン!", "#f1c40f");
+                        logMsg(`${t.name}は神殿の波動でスタンした！`, "#f1c40f");
                     }
                 }
                 await sleep(500);
                 break;
+            case 99:
+                shakeScreen(); logMsg(`[${actor.name}]の ${actor.skill}！！全宇宙が震える！`, "#c0392b");
+                for (let t of targets) {
+                    playSkillEffect(t.uid, 'darkness'); let d = calculateDamage(actor, t, 100); dealDamage(t, d); showFloatingText(t.uid, `-${d}`, "#c0392b"); animateHit(t.uid);
+                } await sleep(600); break;
         }
     }
 
-    // 戻り値でループ(ターン進行)を停止するかどうかを返すように変更
     function checkWinLoss() {
-        let playerAlive = battleState.player.some(p => p.currentHp > 0);
-        let enemyAlive = battleState.enemy.some(e => e.currentHp > 0);
+        let allPlayerDead = battleState.player.every(p => p.currentHp <= 0);
+        let allEnemyDead = battleState.enemy.every(e => e.currentHp <= 0);
 
-        if (!playerAlive) {
+        if (allPlayerDead) {
             battleState.isOver = true;
             document.getElementById('command-area').style.display = 'none';
-            logMsg("💀 敗北しました...", "#e74c3c");
-            if (battleState.isEndless) {
-                let finalWave = battleState.endlessWave;
-                logMsg(`🏆 エンドレスモード到達Wave: ${finalWave} (スコア送信中...)`, "#f1c40f");
-                submitRanking(playerName, finalWave);
+            logMsg("💀 敗北してしまった…", "#e74c3c");
+            if (battleState.isStory) {
+                document.getElementById('btn-story-back').style.display = 'block';
+            } else {
+                document.getElementById('btn-battle-end').style.display = 'block';
             }
-            document.getElementById('btn-battle-end').style.display = 'block';
             return true;
-        } else if (!enemyAlive) {
-            if (battleState.isEndless) {
-                battleState.isWaveTransitioning = true; // ウェーブ移行中フラグを立てる
-                battleState.defeatedCount += battleState.enemy.length;
-                battleState.endlessWave++;
-                logMsg(`🎉 Wave ${battleState.endlessWave - 1} クリア！次のWaveへ進みます！`, "#2ecc71");
-                
-                battleState.player.forEach(p => {
-                    if (p.currentHp > 0) {
-                        let heal = Math.floor(p.hp * 0.3);
-                        p.currentHp = Math.min(p.hp, p.currentHp + heal);
-                        showFloatingText(p.uid, `全体回復 +${heal}`, "#2ecc71");
-                    }
-                });
-                
-                playerCoins += 150 * (battleState.endlessWave - 1);
-                
-                // パンチングスライムの特性 (敵死亡ごとにCT1短縮)
-                battleState.player.forEach(p => {
-                    if (p.id === 20 && p.currentHp > 0) {
-                        for(let i=0; i<battleState.enemy.length; i++) {
-                            if(p.cooldown > 0) p.cooldown--;
-                        }
-                    }
-                });
-                saveData();
-                updateBattleUI();
+        }
 
-                // 1.5秒遅延させて、メッセージやアニメーションを見る時間を作る
+        if (allEnemyDead) {
+            if (battleState.isEndless) {
+                battleState.isWaveTransitioning = true;
+                document.getElementById('command-area').style.display = 'none';
+                battleState.endlessWave++;
+                let healAmount = 20;
+                battleState.player.forEach(p => {
+                    if (p.currentHp > 0) p.currentHp = Math.min(p.hp, p.currentHp + healAmount);
+                });
+                logMsg(`🎉 Wave ${battleState.endlessWave - 1} クリア！味方全員のHPが ${healAmount} 回復！`, "#2ecc71");
+                submitRanking(playerName, battleState.endlessWave - 1);
+                
                 setTimeout(() => {
                     battleState.enemy = generateEndlessEnemies(battleState.endlessWave);
-                    updateBattleUI();
-                    battleState.isWaveTransitioning = false; // フラグ解除
+                    battleState.isWaveTransitioning = false;
+                    logMsg(`🔥 【Wave ${battleState.endlessWave}】 開始！`, "#e74c3c");
                     startCommandPhase();
                 }, 1500);
-                
-                return true; // ターン処理を停止
+                return true;
+            } else if (battleState.isStory) {
+                battleState.isOver = true;
+                document.getElementById('command-area').style.display = 'none';
+                logMsg(`🎉 ${battleState.currentStory.title} クリア！ 報奨 ${battleState.currentStory.reward}🪙`, "#2ecc71");
+                playerCoins += battleState.currentStory.reward;
+
+                if (battleState.currentStory.id >= storyProgress && storyProgress < STORY_DB.length) {
+                    storyProgress = battleState.currentStory.id + 1;
+                }
+
+                // ストーリー20クリアで「神殿スライム(ID: 26)」を獲得
+                if (battleState.currentStory.id === 20 && !playerInventory.includes(26)) {
+                    playerInventory.push(26);
+                    logMsg("✨ ストーリー20クリア報酬：伝説の「神殿スライム」を獲得しました！", "#f1c40f");
+                    alert("🎉 ストーリー20クリアおめでとうございます！\n伝説の『神殿スライム』を獲得しました！");
+                }
+
+                saveData();
+                document.getElementById('btn-story-back').style.display = 'block';
+                return true;
             } else {
                 battleState.isOver = true;
                 document.getElementById('command-area').style.display = 'none';
-                logMsg("🎉 勝利しました！", "#2ecc71");
+                logMsg(`🎉 バトル勝利！ 報奨 ${battleState.currentStageReward}🪙`, "#2ecc71");
                 playerCoins += battleState.currentStageReward;
-                
-                if (battleState.currentStageId === 4) {
-                    playerSummerCoins += 1;
-                    logMsg("🏖️ サマーコインを 1 枚獲得しました！", "#00acc1");
-                }
-                
+                if (battleState.currentStageId === 4) playerSummerCoins += 1;
                 saveData();
                 document.getElementById('btn-battle-end').style.display = 'block';
                 return true;
             }
-        } else {
-             // 戦闘中の敵死亡特性チェック
-             battleState.enemy.forEach(e => {
-                if (e.currentHp <= 0 && !e.isDeadProcessed) {
-                    e.isDeadProcessed = true;
-                    battleState.player.forEach(p => {
-                        if (p.id === 20 && p.currentHp > 0 && p.cooldown > 0) {
-                            p.cooldown--;
-                            showFloatingText(p.uid, "CT短縮!", "#e67e22");
-                        }
-                    });
-                }
-            });
-            return false;
         }
+        return false;
     }
 
-    // 初期化実行
+    // 初期化ロード実行
     loadData();
     initGachaLineup();
 </script>
